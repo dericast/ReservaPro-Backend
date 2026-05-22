@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReservaPro</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>ReservaPro</h1>
+    <p>Plataforma profesional de reservas</p>
+  </div>
+  <div class="session">
+    <span id="sessionLabel">Sin sesión</span>
+    <button id="logoutBtn" class="btn small hidden">Cerrar sesión</button>
+  </div>
+</header>
+
+<main class="container">
+  <section id="authView" class="panel auth">
+    <h2>Acceso</h2>
+    <div class="tabs">
+      <button id="showLogin" class="tab active">Iniciar sesión</button>
+      <button id="showRegister" class="tab">Crear cuenta</button>
+    </div>
+
+    <div id="loginBox">
+      <label>Correo</label>
+      <input id="loginEmail" type="email">
+      <label>Contraseña</label>
+      <input id="loginPass" type="password">
+      <button id="loginBtn" class="btn primary">Entrar</button>
+    </div>
+
+    <div id="registerBox" class="hidden">
+      <label>Nombre del negocio</label>
+      <input id="regBusiness" type="text">
+      <label>Correo</label>
+      <input id="regEmail" type="email">
+      <label>Contraseña</label>
+      <input id="regPass" type="password">
+      <button id="registerBtn" class="btn primary">Crear cuenta</button>
+    </div>
+  </section>
+
+  <section id="dashboardView" class="hidden">
+    <div class="grid">
+      <section class="panel">
+        <h2>Perfil profesional</h2>
+        <label>Nombre del negocio</label>
+        <input id="businessName">
+        <label>Descripción</label>
+        <textarea id="businessDesc" rows="3"></textarea>
+        <label>WhatsApp</label>
+        <input id="businessWhatsapp">
+        <label>Instagram</label>
+        <input id="businessInstagram">
+        <label>Teléfono</label>
+        <input id="businessPhone">
+        <label>Correo electrónico</label>
+        <input id="businessEmail">
+        <label>Ubicación</label>
+        <input id="businessLocation">
+        <button id="saveProfileBtn" class="btn primary">Guardar perfil</button>
+      </section>
+
+      <section class="panel">
+        <h2>Link público</h2>
+        <label>Identificador</label>
+        <input id="businessSlug">
+        <button id="saveSlugBtn" class="btn">Guardar link</button>
+        <label>Link</label>
+        <input id="publicLink" readonly>
+        <button id="openPublicBtn" class="btn small">Abrir vista pública</button>
+        <button id="copyPublicBtn" class="btn small">Copiar</button>
+        <p class="hint">Comparte este link con tus clientes.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Servicios disponibles</h2>
+        <label>Nombre del servicio</label>
+        <input id="serviceName">
+        <label>Duración aproximada</label>
+        <select id="serviceDuration">
+          <option>15 minutos</option>
+          <option>30 minutos</option>
+          <option>45 minutos</option>
+          <option>1 hora</option>
+          <option>1 hora 30 minutos</option>
+          <option>2 horas</option>
+        </select>
+        <button id="addServiceBtn" class="btn">Agregar servicio</button>
+        <table>
+          <thead><tr><th>Servicio</th><th>Duración</th><th></th></tr></thead>
+          <tbody id="servicesTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>Horarios disponibles</h2>
+        <label>Fecha</label>
+        <input id="slotDate" type="date">
+        <label>Hora</label>
+        <input id="slotTime" type="time">
+        <button id="addSlotBtn" class="btn">Agregar horario</button>
+        <table>
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="slotsTable"></tbody>
+        </table>
+      </section>
+
+
+      <section class="panel wide">
+        <h2>Galería / Portafolio</h2>
+
+        <label>Subir imagen desde archivo</label>
+        <input id="galleryFile" type="file" accept="image/*">
+        <p class="hint">Las imágenes se guardan en almacenamiento interno del navegador.</p>
+
+        <label>O agregar imagen por URL</label>
+        <input id="galleryUrl" placeholder="https://...">
+        <button id="addGalleryUrlBtn" class="btn">Agregar imagen por URL</button>
+
+        <p id="galleryStatus" class="hint"></p>
+        <h3>Imágenes agregadas</h3>
+        <div id="galleryManager" class="gallery-grid"></div>
+      </section>
+
+
+      <section class="panel wide">
+        <h2>Calendario visual</h2>
+        <p class="hint">Vista rápida de horarios disponibles y reservas activas.</p>
+        <div id="calendarVisual" class="calendar-visual"></div>
+      </section>
+
+      <section class="panel wide">
+        <h2>Reservas recibidas</h2>
+        <table>
+          <thead><tr><th>Cliente</th><th>Teléfono</th><th>Servicio</th><th>Horario</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="reservationsTable"></tbody>
+        </table>
+      </section>
+
+
+
+      <section class="panel wide">
+        <h2>Backend / Guardado online</h2>
+        <p class="hint">Esta versión guarda perfil, servicios y horarios también en el backend local.</p>
+        <button id="syncBackendBtn" class="btn">Guardar ahora en backend</button>
+        <p id="syncBackendStatus" class="hint"></p>
+      </section>
+
+      <section class="panel wide">
+        <h2>Respaldo de datos</h2>
+        <p class="hint">Guarda una copia de tus datos para no perder reservas, horarios, servicios y clientes.</p>
+
+        <button id="backupDownloadBtn" class="btn">Guardar respaldo</button>
+
+        <label>Cargar respaldo</label>
+        <input id="backupUploadInput" type="file" accept=".json,application/json">
+
+        <p id="backupStatus" class="hint"></p>
+      </section>
+
+      <section class="panel wide">
+        <h2>Historial</h2>
+        <table>
+          <thead><tr><th>Cliente</th><th>Servicio</th><th>Horario</th><th>Estado</th></tr></thead>
+          <tbody id="historyTable"></tbody>
+        </table>
+      </section>
+    </div>
+  </section>
+
+  <section id="publicView" class="hidden">
+    <div class="public-card">
+      <button id="backBtn" class="btn small">Volver</button>
+      <h2 id="pubName">ReservaPro</h2>
+      <p id="pubDesc">Panel profesional de reservas.</p>
+      <p id="pubLocation" class="muted"></p>
+
+      <div class="contact-row">
+        <a id="waBtn" class="btn contact" target="_blank">WhatsApp</a>
+        <a id="igBtn" class="btn contact" target="_blank">Instagram</a>
+        <a id="phoneBtn" class="btn contact">Teléfono</a>
+        <a id="mailBtn" class="btn contact" target="_blank">Correo</a>
+        <a id="mapBtn" class="btn contact" target="_blank">Ubicación</a>
+      </div>
+
+
+      <div id="publicGalleryWrap" class="hidden">
+        <h3>Galería</h3>
+        <div id="publicGallery" class="gallery-grid public-gallery"></div>
+      </div>
+
+      <h3>Solicitar reserva</h3>
+      <label>Nombre</label>
+      <input id="clientName">
+      <label>Teléfono</label>
+      <input id="clientPhone">
+      <label>Correo electrónico</label>
+      <input id="clientEmail" type="email">
+      <label>Servicio</label>
+      <select id="clientService"></select>
+      <label>Horario disponible</label>
+      <select id="clientSlot"></select>
+      <button id="requestReservationBtn" class="btn primary">Solicitar reserva</button>
+
+      <div id="requestResult" class="result hidden"></div>
+
+      <div id="clientStatusBox" class="status-box hidden">
+        <h3>Estado de tu reserva</h3>
+        <div id="clientStatusContent"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

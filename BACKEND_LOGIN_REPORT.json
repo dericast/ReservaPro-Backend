@@ -1,0 +1,7 @@
+{
+  "base": "reservapro-v4-8-movil.zip",
+  "register_handler_replaced": 1,
+  "login_handler_replaced": 1,
+  "node_check": 0,
+  "stderr": ""
+}
