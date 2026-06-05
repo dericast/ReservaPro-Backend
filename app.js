@@ -491,7 +491,12 @@ function renderServices(){
   (u.services||[]).forEach(s=>{
     const tr=document.createElement("tr");
     tr.innerHTML=`<td>${s.name}</td><td>${s.duration}</td><td><button class="btn small danger">Eliminar</button></td>`;
-    tr.querySelector("button").onclick=()=>{u.services=u.services.filter(x=>x.id!==s.id);saveDB();renderServices();renderPublicIfOpen();};
+    tr.querySelector("button").onclick=()=>{
+  u.services=u.services.filter(x=>x.id!==s.id);
+  saveDBAndBackendSoon();
+  renderServices();
+  renderPublicIfOpen();
+};
     tb.appendChild(tr);
   });
 }
@@ -585,28 +590,32 @@ const isStaffMode = staffSession && staffSession.role === "Staff";
     const slot=(u.slots||[]).find(s=>s.id===r.slotId);
     if(r.status==="Completada"||r.status==="Cancelada"){
       const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${r.clientName}</td><td>${r.serviceName}</td><td>${slot?slot.date+" "+slot.time:"-"}</td><td class="status-${String(r.status).toLowerCase()}">${r.status}</td>`;
+      tr.innerHTML=`<td data-label="Cliente">${r.clientName}</td><td data-label="Servicio">${r.serviceName}</td><td data-label="Horario">${slot?slot.date+" "+slot.time:"-"}</td><td data-label="Estado" class="status-${String(r.status).toLowerCase()}">${r.status}</td>`;
       hist.appendChild(tr); return;
     }
     const links=reservationNotifyLinks(u,r);
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${r.clientName}</td><td>${r.clientPhone}</td><td>${r.serviceName}</td><td>${slot?slot.date+" "+slot.time:"-"}</td><td class="status-${String(r.status).toLowerCase()}">${r.status}</td>
-      <td>
-<select class="reservationStaff" data-id="${r.id}" ${isStaffMode ? "disabled" : ""}>
-<option value="">Sin asignar</option>
-${((currentUser().staff) || []).map(s=>`
-<option value="${s.name}" ${r.staff===s.name?'selected':''}>
-${s.name}
-</option>
-`).join("")}
-</select>
-</td>
+    tr.innerHTML=`
+      <td data-label="Cliente">${r.clientName}</td>
+      <td data-label="Teléfono">${r.clientPhone}</td>
+      <td data-label="Servicio">${r.serviceName}</td>
+      <td data-label="Horario">${slot?slot.date+" "+slot.time:"-"}</td>
+      <td data-label="Estado" class="status-${String(r.status).toLowerCase()}">${r.status}</td>
+      <td data-label="Trabajador">
+        <select class="reservationStaff" data-id="${r.id}" ${isStaffMode ? "disabled" : ""}>
+          <option value="">Sin asignar</option>
+          ${((currentUser().staff) || []).map(s=>`
+            <option value="${s.name}" ${r.staff===s.name?'selected':''}>${s.name}</option>
+          `).join("")}
+        </select>
+      </td>
+      <td data-label="Acciones" class="reservationActions">
         <button class="btn small danger" data-a="cancel">Cancelar</button>
         <button class="btn small ok" data-a="confirm">Confirmar</button>
         <button class="btn small" data-a="complete">Completar</button>
         <button class="btn small" data-a="reschedule">Reagendar</button>
-        <a class="btn small" target="_blank" href="${links.wa}">Avisar WhatsApp</a>
-        <a class="btn small" target="_blank" href="${links.mail}">Avisar correo</a>
+        <a class="btn small" target="_blank" href="${links.wa}">WhatsApp</a>
+        <a class="btn small" target="_blank" href="${links.mail}">Correo</a>
       </td>`;
     tr.querySelector('[data-a="cancel"]').onclick=()=>{backendLoadBusinessBySlug(currentUser().slug).then(result=>{
   if(result && result.business){
@@ -620,9 +629,6 @@ ${s.name}
       saveDB();
       backendSaveCurrentBusiness();
       renderReservations();
-      renderSlots();
-      renderCalendarVisual();
-      renderPublicIfOpen();
       renderPremiumCalendar();
     }
   }
@@ -639,9 +645,6 @@ ${s.name}
       saveDB();
       backendSaveCurrentBusiness();
       renderReservations();
-      renderSlots();
-      renderCalendarVisual();
-      renderPublicIfOpen();
       renderPremiumCalendar();
     }
   }
@@ -658,9 +661,6 @@ ${s.name}
       saveDB();
       backendSaveCurrentBusiness();
       renderReservations();
-      renderSlots();
-      renderCalendarVisual();
-      renderPublicIfOpen();
       renderPremiumCalendar();
     }
   }
@@ -1133,7 +1133,7 @@ function RP_normalizePublicContactLinks(){
   const phoneClean = String(u.whatsapp || u.phone || "").replace(/[^\d]/g, "");
 
   if(waBtn){
-    waBtn.href = phoneClean ? "https://wa.me/" + phoneClean + "?text=" + msg : "#";
+    waBtn.href = phoneClean ? "https://wa.me/" + phoneClean + "?text=" + msg : "javascript:void(0)";
     waBtn.target = "_blank";
   }
 
@@ -1150,27 +1150,27 @@ function RP_normalizePublicContactLinks(){
       igBtn.href = ig;
       igBtn.target = "_blank";
     }else{
-      igBtn.href = "#";
+      igBtn.href = "javascript:void(0)";
     }
   }
 
   if(phoneBtn){
     const tel = String(u.phone || u.whatsapp || "").replace(/[^\d+]/g, "");
-    phoneBtn.href = tel ? "tel:" + tel : "#";
+    phoneBtn.href = tel ? "tel:" + tel : "javascript:void(0)";
   }
 
   if(mailBtn){
     const email = String(u.contactEmail || u.email || "").trim();
     mailBtn.href = email
       ? "mailto:" + email + "?subject=" + encodeURIComponent("Solicitud de reserva") + "&body=" + msg
-      : "#";
+      : "javascript:void(0)";
   }
 
   if(mapBtn){
     const loc = String(u.location || "").trim();
     mapBtn.href = loc
       ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(loc)
-      : "#";
+      : "javascript:void(0)";
     mapBtn.target = "_blank";
   }
 }
@@ -1236,8 +1236,6 @@ window.addEventListener("load", () => {
       const clientPhone = document.getElementById("clientPhone").value.trim();
       if((u.blockedClients || []).includes(clientPhone)){
   alert("No puedes hacer reservas con este número.");
-  btn.dataset.sending = "0";
-  btn.disabled = false;
   return;
 }
       const clientEmail = document.getElementById("clientEmail").value.trim();
@@ -1299,7 +1297,7 @@ window.addEventListener("load", () => {
         alert("Reserva enviada.");
       } catch (e) {
         console.error(e);
-        alert("No se pudo enviar la reserva.");
+        showRequestMessage("<strong>No se pudo enviar la reserva.</strong><br>Intenta otra vez o actualiza la página.");
         btn.dataset.sending = "0";
         btn.disabled = false;
       }
@@ -1307,22 +1305,7 @@ window.addEventListener("load", () => {
   }, 500);
 });
 
-/* MANTENER MENSAJE PENDIENTE DESPUÉS DE REFRESH */
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    const businessId = publicBusinessId;
-    if (!businessId) return;
 
-    const last = localStorage.getItem("lastClientReservation_" + businessId);
-    if (!last) return;
-
-    const box = document.getElementById("requestResult");
-    if (box) {
-      box.innerHTML = "<strong>Solicitud enviada.</strong><br>Tu reserva sigue pendiente de confirmación.";
-      box.classList.remove("hidden");
-    }
-  }, 800);
-});
 
 /* FIX SYNC RESERVAS BACKEND
    Pega este bloque AL FINAL de app.js.
@@ -1460,7 +1443,7 @@ function RP_startBackendAutoSync(){
     if(publicView && !publicView.classList.contains("hidden")){
       RP_refreshPublicReservationStatus();
     }
-  }, 5000);
+  }, 10000);
 }
 
 window.addEventListener("load", RP_startBackendAutoSync);
@@ -1829,11 +1812,11 @@ Te recordamos que tienes una cita en ${businessName} para ${serviceName} el ${da
 
     const waLink = phone
       ? "https://wa.me/" + phone + "?text=" + encodeURIComponent(message)
-      : "#";
+      : "javascript:void(0)";
 
     const mailLink = email
   ? "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(email) + "&su=" + encodeURIComponent("Recordatorio de cita") + "&body=" + encodeURIComponent(message)
-  : "#";
+  : "javascript:void(0)";
 
     const div = document.createElement("div");
     div.className = "reminder-card";
@@ -2833,7 +2816,7 @@ setInterval(()=>{
     main.className = 'rp-classic-main';
     const header = document.createElement('div');
     header.className = 'rp-classic-header';
-    header.innerHTML = `<div><h2 id="rpClassicTitle">Dashboard</h2><p id="rpClassicSub">Calendario, reservas activas y resumen rápido.</p></div><span class="rp-classic-badge">Diseño clásico</span>`;
+    
 
     dashboard.insertBefore(shell, grid);
     shell.appendChild(sidebar);
@@ -2965,30 +2948,264 @@ function renderWorkGalleryPreview(){
 
 const galleryFilesInput=document.getElementById("galleryFiles");
 
+function compressImage(file, maxWidth=900, quality=0.72){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    const reader=new FileReader();
+
+    reader.onload=()=>{
+      img.onload=()=>{
+        const scale=Math.min(1,maxWidth/img.width);
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.round(img.width*scale);
+        canvas.height=Math.round(img.height*scale);
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL("image/jpeg",quality));
+      };
+      img.src=reader.result;
+    };
+
+    reader.onerror=()=>resolve("");
+    reader.readAsDataURL(file);
+  });
+}
+
 if(galleryFilesInput){
-  galleryFilesInput.onchange=(e)=>{
+  galleryFilesInput.onchange=async (e)=>{
     const u=currentUser && currentUser();
     if(!u) return;
 
-    u.workGallery = Array.isArray(u.workGallery) ? u.workGallery : [];
+    u.workGallery=Array.isArray(u.workGallery)?u.workGallery:[];
 
-    const files=Array.from(e.target.files || []).slice(0,6 - u.workGallery.length);
+    const files=Array.from(e.target.files || []).slice(0,6-u.workGallery.length);
+    if(!files.length) return;
 
-    files.forEach(file=>{
-      const reader=new FileReader();
+    for(const file of files){
+      if(u.workGallery.length>=6) break;
+      const compressed=await compressImage(file);
+      if(compressed){
+        u.workGallery.push(compressed);
+        saveDB();
+        renderWorkGalleryPreview();
+      }
+    }
 
-      reader.onload=()=>{
-        if(u.workGallery.length < 6){
-          u.workGallery.push(reader.result);
-          saveDB();
-          try{ backendSaveCurrentBusiness(); }catch(e){}
-          renderWorkGalleryPreview();
-        }
-      };
-
-      reader.readAsDataURL(file);
-    });
-
+    try{ await backendSaveCurrentBusiness(); }catch(e){}
+    renderWorkGalleryPreview();
     e.target.value="";
   };
 }
+/* =====================================================
+   RESERVAPRO FIX FINAL: móvil + sesión + reserva pública
+   ===================================================== */
+(function(){
+  function safeGetStaffSession(){
+    try{ return JSON.parse(localStorage.getItem("staffSession") || "null"); }catch(e){ return null; }
+  }
+
+  function forceCorrectVisibleView(){
+    try{
+      const hash = window.location.hash || "";
+      const auth = document.getElementById("authView");
+      const dash = document.getElementById("dashboardView");
+      const pub = document.getElementById("publicView");
+
+      if(hash.startsWith("#/")){
+        if(auth) auth.classList.add("hidden");
+        if(dash) dash.classList.add("hidden");
+        if(pub) pub.classList.remove("hidden");
+        return;
+      }
+
+      const u = (typeof currentUser === "function") ? currentUser() : null;
+      const staff = safeGetStaffSession();
+
+      if(!u && !staff){
+        localStorage.removeItem("staffSession");
+        localStorage.setItem("currentRole","Admin");
+        if(dash) dash.classList.add("hidden");
+        if(pub) pub.classList.add("hidden");
+        if(auth) auth.classList.remove("hidden");
+        return;
+      }
+
+      if(u || staff){
+        if(auth) auth.classList.add("hidden");
+        if(pub) pub.classList.add("hidden");
+        if(dash) dash.classList.remove("hidden");
+      }
+    }catch(e){ console.warn("RP visible view guard", e); }
+  }
+
+  window.RP_forceCorrectVisibleView = forceCorrectVisibleView;
+  window.addEventListener("load", ()=>setTimeout(forceCorrectVisibleView, 1200));
+  window.addEventListener("hashchange", ()=>setTimeout(forceCorrectVisibleView, 300));
+  setInterval(forceCorrectVisibleView, 3000);
+
+  function cleanPublicForm(){
+    ["clientName","clientPhone","clientEmail"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.value = "";
+    });
+  }
+
+  function showRequestMessage(html){
+    const box = document.getElementById("requestResult");
+    if(box){
+      box.innerHTML = html;
+      box.classList.remove("hidden");
+    }
+  }
+
+  function installCleanReservationButton(){
+    const oldBtn = document.getElementById("requestReservationBtn");
+    if(!oldBtn || oldBtn.dataset.rpCleanSubmit === "1") return;
+
+    const btn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(btn, oldBtn);
+    btn.type = "button";
+    btn.dataset.rpCleanSubmit = "1";
+    btn.dataset.sending = "0";
+
+    btn.onclick = async function(){
+      if(btn.dataset.sending === "1") return;
+      btn.dataset.sending = "1";
+      btn.disabled = true;
+
+      try{
+        const u = db.users.find(x => x.id === publicBusinessId);
+        if(!u){ showRequestMessage("<strong>Error.</strong><br>No se encontró el negocio."); return; }
+
+        const clientName = (document.getElementById("clientName")?.value || "").trim();
+        const clientPhone = (document.getElementById("clientPhone")?.value || "").trim();
+        const clientEmail = (document.getElementById("clientEmail")?.value || "").trim();
+        const serviceId = document.getElementById("clientService")?.value || "";
+        const slotId = document.getElementById("clientSlot")?.value || "";
+        const selectedStaff = (document.getElementById("clientStaff")?.value || "").trim();
+
+        if(!clientName || !clientPhone || !serviceId || !slotId){
+          showRequestMessage("<strong>Faltan datos.</strong><br>Completa nombre, teléfono, servicio y horario.");
+          return;
+        }
+
+        if((u.blockedClients || []).includes(clientPhone)){
+          alert("No puedes hacer reservas con este número.");
+          return;
+        }
+
+        if(typeof isSlotActiveReserved === "function" && isSlotActiveReserved(u, slotId)){
+          showRequestMessage("<strong>Horario ocupado.</strong><br>Ese horario ya fue reservado. Elige otro.");
+          return;
+        }
+
+        const service = (u.services || []).find(s => s.id === serviceId);
+        const reservation = {
+          id: uid(),
+          clientName,
+          clientPhone,
+          clientEmail,
+          staff: selectedStaff,
+          staffId: selectedStaff,
+          serviceId,
+          serviceName: service ? service.name : "Servicio",
+          slotId,
+          status: "Pendiente",
+          createdAt: new Date().toISOString()
+        };
+
+        let updated = null;
+        if(typeof backendCreateReservation === "function"){
+          const result = await backendCreateReservation(u.id, reservation);
+          if(result && result.business) updated = normalizeUser(result.business);
+        }
+
+        if(updated){
+          const index = db.users.findIndex(x => x.id === updated.id);
+          if(index >= 0) db.users[index] = updated;
+          else db.users.push(updated);
+          publicBusinessId = updated.id;
+        }else{
+          u.reservations = Array.isArray(u.reservations) ? u.reservations : [];
+          u.reservations.push(reservation);
+          updated = u;
+        }
+
+        saveDB();
+        localStorage.setItem("lastClientReservation_" + publicBusinessId, reservation.id);
+        localStorage.setItem(clientReservationKey(publicBusinessId), reservation.id);
+
+        cleanPublicForm();
+        await renderPublic(updated);
+        showRequestMessage("<strong>Solicitud enviada.</strong><br>Tu reserva quedó pendiente de confirmación.");
+      }catch(e){
+        console.error("RP_PUBLIC_REQUEST_ERROR", e);
+        showRequestMessage("<strong>No se pudo enviar la reserva.</strong><br>Intenta otra vez o actualiza la página.");
+      }finally{
+        btn.dataset.sending = "0";
+        btn.disabled = false;
+      }
+    };
+  }
+
+  window.RP_installCleanReservationButton = installCleanReservationButton;
+  window.addEventListener("load", ()=>setTimeout(installCleanReservationButton, 1400));
+  window.addEventListener("hashchange", ()=>setTimeout(installCleanReservationButton, 900));
+  document.addEventListener("click", ()=>setTimeout(installCleanReservationButton, 300));
+})();
+
+
+/* =====================================================
+   FIX MÓVIL FINAL: tablas como tarjetas + sin alert molesto
+   ===================================================== */
+(function(){
+  function RP_labelReservationCells(){
+    const table = document.getElementById("reservationsTable");
+    if(!table) return;
+    const labels = ["Cliente","Teléfono","Servicio","Horario","Estado","Trabajador","Acciones"];
+    Array.from(table.querySelectorAll("tbody tr")).forEach(tr=>{
+      Array.from(tr.children).forEach((td,i)=>{
+        td.setAttribute("data-label", labels[i] || "");
+      });
+    });
+  }
+
+  function RP_updatePublicButtonState(){
+    const btn = document.getElementById("requestReservationBtn");
+    const slot = document.getElementById("clientSlot");
+    if(!btn || !slot) return;
+    const hasSlot = !!slot.value;
+    btn.disabled = !hasSlot;
+    if(!hasSlot){
+      btn.title = "No hay horarios disponibles";
+    }else{
+      btn.title = "";
+    }
+  }
+
+  const oldRenderReservations = window.renderReservations;
+  if(typeof oldRenderReservations === "function" && !oldRenderReservations.rpMobileWrapped){
+    const wrapped = function(){
+      const result = oldRenderReservations.apply(this, arguments);
+      setTimeout(RP_labelReservationCells, 50);
+      return result;
+    };
+    wrapped.rpMobileWrapped = true;
+    window.renderReservations = wrapped;
+  }
+
+  const oldRenderPublic = window.renderPublic;
+  if(typeof oldRenderPublic === "function" && !oldRenderPublic.rpMobileWrapped){
+    const wrappedPublic = async function(){
+      const result = await oldRenderPublic.apply(this, arguments);
+      setTimeout(RP_updatePublicButtonState, 80);
+      return result;
+    };
+    wrappedPublic.rpMobileWrapped = true;
+    window.renderPublic = wrappedPublic;
+  }
+
+  window.addEventListener("load", ()=>setTimeout(()=>{RP_labelReservationCells();RP_updatePublicButtonState();}, 800));
+  document.addEventListener("click", ()=>setTimeout(()=>{RP_labelReservationCells();RP_updatePublicButtonState();}, 200));
+  document.addEventListener("change", ()=>setTimeout(RP_updatePublicButtonState, 100));
+})();

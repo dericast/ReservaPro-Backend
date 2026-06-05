@@ -1021,45 +1021,162 @@ tr:hover{background:#eef4ff !important;}
   }
 }
 
+/* =====================================================
+   RESERVAPRO FIX FINAL MÓVIL TIPO APP
+   ===================================================== */
+#authView.hidden,
+#dashboardView.hidden,
+#publicView.hidden{
+  display:none !important;
+}
 
-/* ===== FIX MOVIL: no romper ancho cuando llegan reservas ===== */
 @media(max-width:700px){
-  html, body{
+  html,body{
     width:100% !important;
     max-width:100% !important;
     overflow-x:hidden !important;
+    background:#edf1f5 !important;
   }
 
-  .topbar,
-  main.container,
-  .container,
-  #dashboardView,
-  #publicView,
-  .public-card{
+  .topbar{
     width:100% !important;
     max-width:100% !important;
-    margin-left:0 !important;
-    margin-right:0 !important;
-    box-sizing:border-box !important;
+    padding:18px 16px !important;
+    display:block !important;
   }
+
+  .topbar h1{font-size:28px !important;line-height:1.1 !important;}
+  .topbar p{font-size:15px !important;}
+  .session{margin-top:12px !important;display:flex !important;gap:8px !important;flex-wrap:wrap !important;}
 
   .container{
-    padding:8px !important;
-  }
-
-  #dashboardView .grid,
-  #dashboardView .rp-dashboard-grid,
-  .grid{
-    display:block !important;
-    grid-template-columns:1fr !important;
-  }
-
-  .panel,
-  .panel.wide{
     width:100% !important;
     max-width:100% !important;
+    margin:0 !important;
+    padding:10px !important;
+  }
+
+  .panel{
+    width:100% !important;
+    max-width:100% !important;
+    margin:10px 0 !important;
+    padding:12px !important;
+    overflow:hidden !important;
+  }
+
+  .auth{
+    max-width:100% !important;
+    margin:10px 0 !important;
+  }
+
+  input,select,textarea{
+    width:100% !important;
+    max-width:100% !important;
+    font-size:16px !important;
+  }
+
+  .btn,.tab,button,a.btn{
+    font-size:15px !important;
+    max-width:100% !important;
+  }
+
+  .grid,
+  .rp-dashboard-grid,
+  #dashboardView .grid,
+  #dashboardView .rp-dashboard-grid{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  .rp-classic-shell{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  .rp-classic-sidebar{
+    position:sticky !important;
+    top:0 !important;
+    z-index:20 !important;
+    width:100% !important;
+    max-width:100% !important;
+    background:#edf1f5 !important;
+    padding:8px !important;
+    margin:0 0 10px !important;
+    border:1px solid #aab3bd !important;
+  }
+
+  .rp-brand-box{padding:8px !important;margin-bottom:6px !important;}
+  .rp-brand-box strong{font-size:20px !important;display:block !important;}
+  .rp-brand-box span{font-size:13px !important;}
+
+  .rp-classic-sidebar nav{
+    display:flex !important;
+    gap:6px !important;
     overflow-x:auto !important;
-    box-sizing:border-box !important;
+    white-space:nowrap !important;
+    padding-bottom:4px !important;
+    -webkit-overflow-scrolling:touch !important;
+  }
+
+  .rp-nav-btn{
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:110px !important;
+    padding:10px 12px !important;
+    text-align:center !important;
+    font-size:14px !important;
+  }
+
+  .rp-classic-main,
+  .rp-classic-header{
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  .rp-classic-header h2{font-size:22px !important;}
+  .rp-classic-header p{font-size:14px !important;}
+
+  #premiumCalendarGrid{
+    display:grid !important;
+    grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+    gap:4px !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+  }
+
+  .premium-calendar-head{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    text-align:center !important;
+  }
+
+  .premium-calendar-weekday,
+  .premium-calendar-day{
+    min-width:0 !important;
+    width:100% !important;
+    padding:6px !important;
+    font-size:12px !important;
+  }
+
+  .premium-calendar-day{
+    min-height:52px !important;
+    border-radius:4px !important;
+  }
+
+  .premium-calendar-day strong{font-size:16px !important;}
+  .premium-calendar-day small{display:none !important;}
+  .calendar-dots{gap:2px !important;margin-top:5px !important;}
+  .calendar-dots span{width:6px !important;height:6px !important;}
+
+  .calendar-legend{
+    overflow-x:auto !important;
+    white-space:nowrap !important;
+    display:block !important;
   }
 
   #reservationsTable,
@@ -1070,56 +1187,991 @@ tr:hover{background:#eef4ff !important;}
     max-width:100% !important;
     overflow-x:auto !important;
     white-space:nowrap !important;
+    -webkit-overflow-scrolling:touch !important;
   }
 
   #reservationsTable td:last-child{
-    min-width:260px !important;
-    white-space:normal !important;
+    min-width:420px !important;
   }
 
-  #reservationsTable .btn,
-  #reservationsTable button,
-  #reservationsTable a{
-    font-size:11px !important;
-    padding:5px 6px !important;
-    margin:2px !important;
+  th,td{
+    font-size:12px !important;
+    padding:6px !important;
   }
 
-  #reservationsTable .reservationStaff{
-    min-width:110px !important;
-    max-width:130px !important;
-  }
-
-  #premiumCalendarGrid{
-    width:100% !important;
-    min-width:0 !important;
-    overflow:hidden !important;
-  }
-
-  .premium-calendar-head{
-    display:flex !important;
-    flex-wrap:wrap !important;
+  .stats-grid,.today-summary{
+    grid-template-columns:1fr 1fr !important;
     gap:8px !important;
   }
 
-  .premium-calendar-head h3{
-    width:100% !important;
-    text-align:center !important;
+  .stat-card,.today-summary div{
+    padding:10px !important;
+  }
+}
+
+
+/* =====================================================
+   FIX VISUAL MÓVIL FINAL - sin scroll horizontal en reservas
+   ===================================================== */
+@media(max-width:700px){
+  html, body{
+    overflow-x:hidden !important;
   }
 
-  .calendar-legend{
-    overflow-x:auto !important;
-    white-space:nowrap !important;
+  .container, main, section, .panel, .rp-classic-main{
+    max-width:100vw !important;
+  }
+
+  .premium-calendar-day small{
+    display:block !important;
+    font-size:9px !important;
+    line-height:1.1 !important;
+    color:#555 !important;
+    margin-top:1px !important;
   }
 
   .premium-calendar-day{
-    min-width:0 !important;
-    min-height:70px !important;
-    padding:5px !important;
+    min-height:62px !important;
   }
 
-  .premium-calendar-weekday{
+  .calendar-dots{
+    margin-top:2px !important;
+  }
+
+  /* La tabla de reservas se convierte en tarjetas en celular */
+  #reservationsTable{
+    display:block !important;
+    width:100% !important;
+    overflow:visible !important;
+    white-space:normal !important;
+    border:0 !important;
+  }
+
+  #reservationsTable thead{
+    display:none !important;
+  }
+
+  #reservationsTable tbody{
+    display:block !important;
+    width:100% !important;
+  }
+
+  #reservationsTable tr{
+    display:block !important;
+    width:100% !important;
+    margin:10px 0 !important;
+    border:1px solid #aab3bd !important;
+    background:#fff !important;
+    padding:8px !important;
+  }
+
+  #reservationsTable td{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    border:0 !important;
+    border-bottom:1px solid #e1e5ea !important;
+    padding:8px 4px !important;
+    white-space:normal !important;
+    font-size:14px !important;
+  }
+
+  #reservationsTable td:last-child{
+    min-width:0 !important;
+    border-bottom:0 !important;
+  }
+
+  #reservationsTable td::before{
+    content:attr(data-label);
+    display:block !important;
+    font-weight:bold !important;
+    margin-bottom:4px !important;
+    color:#4b5663 !important;
     font-size:12px !important;
-    padding:5px !important;
+  }
+
+  #reservationsTable td[data-label="Acciones"]{
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:6px !important;
+    align-items:center !important;
+  }
+
+  #reservationsTable td[data-label="Acciones"]::before{
+    flex:0 0 100% !important;
+  }
+
+  #reservationsTable td[data-label="Acciones"] .btn,
+  #reservationsTable td[data-label="Acciones"] button,
+  #reservationsTable td[data-label="Acciones"] a{
+    flex:1 1 calc(50% - 6px) !important;
+    min-width:120px !important;
+    margin:0 !important;
+    text-align:center !important;
+    padding:9px 6px !important;
+    font-size:13px !important;
+  }
+
+  #reservationsTable .reservationStaff{
+    width:100% !important;
+    min-width:0 !important;
+    font-size:16px !important;
+  }
+
+  #requestResult{
+    font-size:14px !important;
+    line-height:1.35 !important;
+  }
+
+  #requestReservationBtn:disabled{
+    opacity:.55 !important;
+    cursor:not-allowed !important;
   }
 }
+
+/* =====================================================
+   AJUSTE REAL MÓVIL: tablas y paneles encajan en pantalla
+   ===================================================== */
+@media(max-width:700px){
+  *, *::before, *::after{box-sizing:border-box !important;}
+  html, body{
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:hidden !important;
+  }
+  body{font-size:14px !important;}
+
+  .topbar{
+    width:100% !important;
+    max-width:100% !important;
+    padding:18px 16px !important;
+  }
+  .topbar h1{font-size:30px !important;line-height:1.05 !important;}
+  .topbar p{font-size:15px !important;}
+  .session{display:flex !important;flex-wrap:wrap !important;gap:8px !important;}
+
+  .container,
+  main.container{
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:10px !important;
+    overflow-x:hidden !important;
+  }
+
+  .grid,
+  .rp-dashboard-grid,
+  .rp-classic-layout{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  .panel,
+  .panel.wide,
+  .rp-classic-shell,
+  .rp-classic-main,
+  .rp-classic-header,
+  .rp-classic-content{
+    width:100% !important;
+    max-width:100% !important;
+    margin:10px 0 !important;
+    padding:12px !important;
+    overflow:hidden !important;
+  }
+
+  .panel h2{font-size:22px !important;line-height:1.15 !important;}
+  .panel h3{font-size:18px !important;}
+  .hint,.muted{font-size:13px !important;}
+
+  input,select,textarea,.btn,button{
+    max-width:100% !important;
+    font-size:16px !important;
+  }
+
+  /* Menú superior: una fila desplazable, sin hacer crecer la página */
+  .rp-classic-nav,
+  .rp-tabs,
+  .tabs{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    gap:8px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    max-width:100% !important;
+    padding-bottom:6px !important;
+  }
+  .rp-classic-nav button,
+  .rp-tab,
+  .tab{
+    flex:0 0 auto !important;
+    white-space:nowrap !important;
+    font-size:15px !important;
+    padding:10px 14px !important;
+  }
+
+  /* Calendario ajustado */
+  .premium-calendar-head{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+  }
+  #premiumCalendarGrid{
+    display:grid !important;
+    grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+    gap:4px !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+  }
+  .premium-calendar-weekday,
+  .premium-calendar-day{
+    min-width:0 !important;
+    width:100% !important;
+    padding:5px !important;
+  }
+  .premium-calendar-weekday{font-size:12px !important;text-align:center !important;}
+  .premium-calendar-day{
+    min-height:58px !important;
+    border-radius:5px !important;
+  }
+  .premium-calendar-day strong{font-size:16px !important;}
+  .premium-calendar-day small{
+    display:block !important;
+    font-size:8.5px !important;
+    line-height:1.1 !important;
+    margin-top:2px !important;
+  }
+  .calendar-dots{gap:2px !important;margin-top:2px !important;}
+  .calendar-dots span{width:6px !important;height:6px !important;}
+  .calendar-legend{
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    white-space:normal !important;
+    overflow:hidden !important;
+    font-size:13px !important;
+  }
+
+  /* Todas las tablas administrativas se vuelven tarjetas en teléfono */
+  table:not(#premiumCalendarGrid){
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    border:0 !important;
+    overflow:visible !important;
+    white-space:normal !important;
+  }
+  table:not(#premiumCalendarGrid) thead{
+    display:none !important;
+  }
+  table:not(#premiumCalendarGrid) tbody{
+    display:block !important;
+    width:100% !important;
+  }
+  table:not(#premiumCalendarGrid) tr{
+    display:block !important;
+    width:100% !important;
+    margin:10px 0 !important;
+    padding:8px !important;
+    border:1px solid #aab3bd !important;
+    background:#fff !important;
+  }
+  table:not(#premiumCalendarGrid) td{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    border:0 !important;
+    border-bottom:1px solid #e5e9ee !important;
+    padding:7px 3px !important;
+    white-space:normal !important;
+    word-break:break-word !important;
+    font-size:14px !important;
+  }
+  table:not(#premiumCalendarGrid) td:last-child{
+    border-bottom:0 !important;
+  }
+
+  /* Reservas: labels y botones ajustados */
+  #reservationsTable td::before,
+  #historyTable td::before{
+    content:attr(data-label);
+    display:block !important;
+    font-weight:700 !important;
+    font-size:12px !important;
+    color:#4b5663 !important;
+    margin-bottom:3px !important;
+  }
+  #reservationsTable td[data-label="Acciones"],
+  #reservationsTable td.reservationActions{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:6px !important;
+  }
+  #reservationsTable td[data-label="Acciones"]::before,
+  #reservationsTable td.reservationActions::before{
+    grid-column:1/-1 !important;
+  }
+  #reservationsTable td[data-label="Acciones"] .btn,
+  #reservationsTable td[data-label="Acciones"] button,
+  #reservationsTable td[data-label="Acciones"] a,
+  #reservationsTable td.reservationActions .btn,
+  #reservationsTable td.reservationActions button,
+  #reservationsTable td.reservationActions a{
+    width:100% !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:9px 5px !important;
+    font-size:13px !important;
+    text-align:center !important;
+  }
+  #reservationsTable .reservationStaff{
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  .stats-grid,.today-summary{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:8px !important;
+  }
+  .stat-card,.today-summary div{
+    padding:10px 6px !important;
+    min-width:0 !important;
+  }
+  .stat-card strong,.today-summary strong{font-size:26px !important;}
+}
+
+/* ===== RESERVAPRO COLORES PROFESIONALES ===== */
+:root{
+  --rp-bg:#F8FAFC !important;
+  --rp-panel:#FFFFFF !important;
+  --rp-border:#E5E7EB !important;
+  --rp-title:#111827 !important;
+  --rp-muted:#6B7280 !important;
+  --rp-blue:#2563EB !important;
+  --rp-blue-soft:#EFF6FF !important;
+}
+
+body,
+html{
+  background:#F8FAFC !important;
+  color:#111827 !important;
+}
+
+.topbar{
+  background:#1E293B !important;
+  color:white !important;
+  border-bottom:3px solid #0F172A !important;
+}
+
+.topbar h1,
+.topbar p,
+.session span{
+  color:white !important;
+}
+
+.rp-classic-sidebar,
+.rp-classic-header{
+  background:#FFFFFF !important;
+  border-color:#E5E7EB !important;
+}
+
+.rp-brand-box{
+  background:#F1F5F9 !important;
+  border-color:#E5E7EB !important;
+}
+
+.rp-nav-btn.active,
+.btn.primary,
+.tab.active{
+  background:#2563EB !important;
+  border-color:#1D4ED8 !important;
+  color:white !important;
+}
+
+.rp-nav-btn:hover{
+  background:#EFF6FF !important;
+  border-color:#BFDBFE !important;
+}
+
+.panel h2,
+.public-card h2,
+.public-card h3{
+  background:#F8FAFC !important;
+  border-left-color:#2563EB !important;
+}
+
+.premium-calendar-day.today,
+.premium-calendar-day.selected-day{
+  border-color:#2563EB !important;
+}
+
+.premium-calendar-day.selected-day{
+  background:#EFF6FF !important;
+}
+
+/* ===== QUITAR GRIS OSCURO DE TODA LA APP ===== */
+
+html,
+body{
+  background:#F8FAFC !important;
+}
+
+.rp-classic-sidebar,
+.rp-classic-header,
+.rp-brand-box,
+.panel,
+.public-card,
+.premium-calendar-head,
+.calendar-legend,
+th{
+  background:#FFFFFF !important;
+}
+
+.premium-calendar-weekday{
+  background:#EFF6FF !important;
+  color:#1E293B !important;
+}
+
+.panel h2,
+.public-card h2,
+.public-card h3{
+  background:#F8FAFC !important;
+}
+
+tr:nth-child(even){
+  background:#FFFFFF !important;
+}
+
+.rp-nav-btn{
+  background:#FFFFFF !important;
+}
+
+.rp-nav-btn:hover{
+  background:#EFF6FF !important;
+}
+
+table,
+td{
+  background:#FFFFFF !important;
+}
+
+/* ===== LIMPIEZA TOTAL DE GRISES ===== */
+
+.rp-classic-sidebar,
+.rp-classic-header,
+.rp-brand-box,
+.panel,
+.public-card,
+.calendar-legend,
+.premium-calendar-head,
+.premium-calendar-weekday,
+th,
+.stat-card,
+.today-summary div,
+.reminder-card,
+.client-profile-box,
+.premium-calendar-appointment{
+    background:#FFFFFF !important;
+}
+
+.premium-calendar-day{
+    background:#FFFFFF !important;
+}
+
+table,
+tr,
+td{
+    background:#FFFFFF !important;
+}
+
+.topbar{
+    background:#1E293B !important;
+}
+
+.rp-nav-btn{
+    background:#FFFFFF !important;
+}
+
+.rp-nav-btn.active{
+    background:#2563EB !important;
+    color:#FFFFFF !important;
+}
+
+/* =====================================================
+   RESERVAPRO PREMIUM BLUE
+   ===================================================== */
+
+html,
+body{
+  background:#F8FAFC !important;
+  color:#111827 !important;
+}
+
+/* Barra superior */
+.topbar{
+  background:#1E293B !important;
+  border-bottom:3px solid #0F172A !important;
+}
+
+.topbar h1,
+.topbar p,
+.session span{
+  color:#FFFFFF !important;
+}
+
+/* Paneles */
+.panel,
+.public-card,
+.stat-card,
+.reminder-card,
+.client-profile-box,
+.today-summary div,
+.premium-calendar-appointment{
+  background:#FFFFFF !important;
+  border:1px solid #E5E7EB !important;
+  border-radius:12px !important;
+}
+
+/* Títulos */
+.panel h2,
+.public-card h2,
+.public-card h3{
+  background:#F8FAFC !important;
+  border-left:4px solid #2563EB !important;
+  color:#111827 !important;
+}
+
+/* Menú lateral */
+.rp-classic-sidebar{
+  background:#FFFFFF !important;
+  border:1px solid #E5E7EB !important;
+}
+
+.rp-brand-box{
+  background:#F8FAFC !important;
+}
+
+.rp-nav-btn{
+  background:#FFFFFF !important;
+  color:#374151 !important;
+  border:1px solid #E5E7EB !important;
+  border-radius:10px !important;
+}
+
+.rp-nav-btn:hover{
+  background:#EFF6FF !important;
+}
+
+.rp-nav-btn.active{
+  background:#2563EB !important;
+  color:#FFFFFF !important;
+  border-color:#2563EB !important;
+}
+
+/* Botones */
+.btn.primary,
+.tab.active{
+  background:#2563EB !important;
+  border-color:#1D4ED8 !important;
+  color:#FFFFFF !important;
+}
+
+.btn{
+  border-radius:10px !important;
+}
+
+/* Inputs */
+input,
+select,
+textarea{
+  border:1px solid #D1D5DB !important;
+  border-radius:10px !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:#2563EB !important;
+  outline:none !important;
+}
+
+/* Calendario */
+.premium-calendar-head,
+.calendar-legend{
+  background:#FFFFFF !important;
+  border:1px solid #E5E7EB !important;
+}
+
+.premium-calendar-weekday{
+  background:#EFF6FF !important;
+  color:#1E293B !important;
+}
+
+.premium-calendar-day{
+  background:#FFFFFF !important;
+  border:1px solid #E5E7EB !important;
+  border-radius:10px !important;
+}
+
+.premium-calendar-day.today{
+  border:2px solid #2563EB !important;
+}
+
+.premium-calendar-day.selected-day{
+  background:#DBEAFE !important;
+  border:2px solid #2563EB !important;
+}
+
+/* Tablas */
+table,
+th,
+td{
+  border-color:#E5E7EB !important;
+}
+
+th{
+  background:#EFF6FF !important;
+  color:#1E293B !important;
+}
+
+tr:hover{
+  background:#F8FAFC !important;
+}
+
+/* Estados */
+.status-pendiente{
+  color:#F59E0B !important;
+}
+
+.status-confirmada{
+  color:#10B981 !important;
+}
+
+.status-completada{
+  color:#3B82F6 !important;
+}
+
+.status-cancelada{
+  color:#EF4444 !important;
+}
+
+/* =====================================================
+   RESERVAPRO ULTRA PREMIUM
+   ===================================================== */
+
+.panel,
+.public-card,
+.stat-card,
+.reminder-card,
+.client-profile-box,
+.premium-calendar-appointment{
+    box-shadow:0 10px 30px rgba(0,0,0,.06) !important;
+    border:none !important;
+}
+
+.rp-nav-btn{
+    transition:.25s ease !important;
+}
+
+.rp-nav-btn:hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 8px 20px rgba(37,99,235,.15) !important;
+}
+
+.btn{
+    transition:.25s ease !important;
+}
+
+.btn:hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 10px 20px rgba(37,99,235,.18) !important;
+}
+
+.premium-calendar-day{
+    transition:.25s ease !important;
+}
+
+.premium-calendar-day:hover{
+    transform:translateY(-3px) !important;
+    box-shadow:0 12px 25px rgba(0,0,0,.08) !important;
+}
+
+input,
+select,
+textarea{
+    transition:.25s ease !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+    box-shadow:0 0 0 4px rgba(37,99,235,.12) !important;
+}
+
+.stat-card strong,
+.today-summary strong{
+    font-size:30px !important;
+    font-weight:800 !important;
+}
+
+.topbar{
+    box-shadow:0 6px 20px rgba(0,0,0,.12) !important;
+}
+
+.panel h2,
+.public-card h2,
+.public-card h3{
+    border-left:5px solid #2563EB !important;
+    border-radius:10px !important;
+}
+
+.premium-calendar-day.selected-day{
+    box-shadow:0 0 0 4px rgba(37,99,235,.15) !important;
+}
+
+.rp-nav-btn.active{
+    box-shadow:0 8px 18px rgba(37,99,235,.25) !important;
+}
+
+/* =====================================================
+   RESERVAPRO GALAXY PRO MAX
+   ===================================================== */
+
+html,
+body{
+  background:
+    radial-gradient(circle at top left, rgba(37,99,235,.14), transparent 30%),
+    radial-gradient(circle at top right, rgba(16,185,129,.12), transparent 28%),
+    #F8FAFC !important;
+}
+
+.topbar{
+  background:linear-gradient(135deg,#0F172A,#1E3A8A,#2563EB) !important;
+  border-bottom:none !important;
+  box-shadow:0 12px 35px rgba(15,23,42,.28) !important;
+}
+
+.panel,
+.public-card,
+.stat-card,
+.today-summary div,
+.reminder-card,
+.client-profile-box,
+.premium-calendar-appointment{
+  background:rgba(255,255,255,.92) !important;
+  backdrop-filter:blur(14px) !important;
+  border:1px solid rgba(255,255,255,.65) !important;
+  border-radius:18px !important;
+  box-shadow:0 18px 45px rgba(15,23,42,.10) !important;
+}
+
+.panel h2,
+.public-card h2,
+.public-card h3{
+  background:linear-gradient(135deg,#EFF6FF,#FFFFFF) !important;
+  border-left:6px solid #2563EB !important;
+  border-radius:14px !important;
+  color:#0F172A !important;
+}
+
+.rp-classic-sidebar{
+  background:rgba(255,255,255,.9) !important;
+  backdrop-filter:blur(14px) !important;
+  border:1px solid rgba(226,232,240,.9) !important;
+  border-radius:20px !important;
+  box-shadow:0 18px 45px rgba(15,23,42,.10) !important;
+}
+
+.rp-brand-box{
+  background:linear-gradient(135deg,#EFF6FF,#F8FAFC) !important;
+  border-radius:16px !important;
+}
+
+.rp-nav-btn{
+  border-radius:14px !important;
+  border:1px solid #E5E7EB !important;
+  background:#FFFFFF !important;
+  transition:.22s ease !important;
+}
+
+.rp-nav-btn:hover{
+  background:#EFF6FF !important;
+  transform:translateX(4px) !important;
+}
+
+.rp-nav-btn.active{
+  background:linear-gradient(135deg,#2563EB,#1D4ED8) !important;
+  color:#FFFFFF !important;
+  box-shadow:0 12px 25px rgba(37,99,235,.30) !important;
+}
+
+.btn.primary,
+.tab.active{
+  background:linear-gradient(135deg,#2563EB,#1D4ED8) !important;
+  color:#FFFFFF !important;
+  border:none !important;
+}
+
+.btn{
+  border-radius:14px !important;
+  transition:.22s ease !important;
+}
+
+.btn:hover{
+  transform:translateY(-2px) !important;
+  box-shadow:0 12px 24px rgba(37,99,235,.20) !important;
+}
+
+input,
+select,
+textarea{
+  border-radius:14px !important;
+  border:1px solid #D1D5DB !important;
+  background:#FFFFFF !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:#2563EB !important;
+  box-shadow:0 0 0 4px rgba(37,99,235,.14) !important;
+}
+
+.premium-calendar-head,
+.calendar-legend{
+  background:rgba(255,255,255,.9) !important;
+  border:1px solid #E5E7EB !important;
+  border-radius:16px !important;
+}
+
+.premium-calendar-weekday{
+  background:#EFF6FF !important;
+  color:#1E3A8A !important;
+  border-radius:12px !important;
+}
+
+.premium-calendar-day{
+  background:#FFFFFF !important;
+  border:1px solid #E5E7EB !important;
+  border-radius:16px !important;
+  transition:.22s ease !important;
+}
+
+.premium-calendar-day:hover{
+  transform:translateY(-4px) !important;
+  box-shadow:0 16px 30px rgba(15,23,42,.12) !important;
+}
+
+.premium-calendar-day.today{
+  border:2px solid #2563EB !important;
+  background:#EFF6FF !important;
+}
+
+.premium-calendar-day.selected-day{
+  background:#DBEAFE !important;
+  border:2px solid #2563EB !important;
+  box-shadow:0 0 0 5px rgba(37,99,235,.16) !important;
+}
+
+th{
+  background:#EFF6FF !important;
+  color:#1E3A8A !important;
+}
+
+table,
+td{
+  border-color:#E5E7EB !important;
+}
+
+.status-pendiente{color:#D97706 !important;}
+.status-confirmada{color:#059669 !important;}
+.status-completada{color:#2563EB !important;}
+.status-cancelada{color:#DC2626 !important;}
+
+.dot-pending{background:#F59E0B !important;}
+.dot-confirmed{background:#10B981 !important;}
+.dot-completed{background:#3B82F6 !important;}
+.dot-cancelled{background:#EF4444 !important;}
+
+/* ===== HORARIOS DEL CALENDARIO - MODERNO COMPACTO ===== */
+
+#premiumCalendarDetails .calendar-slot,
+#calendarVisual .calendar-slot,
+.calendar-slot{
+  background:linear-gradient(135deg,#FFFFFF,#F8FAFC) !important;
+  border:1px solid #E5E7EB !important;
+  border-left:4px solid #10B981 !important;
+  border-radius:10px !important;
+  box-shadow:0 4px 12px rgba(15,23,42,.05) !important;
+  padding:8px 12px !important;
+  margin:6px 0 !important;
+}
+
+.calendar-slot strong{
+  color:#0F172A !important;
+  font-size:14px !important;
+  font-weight:700 !important;
+}
+
+.calendar-slot span{
+  color:#10B981 !important;
+  font-size:12px !important;
+  font-weight:700 !important;
+}
+
+.calendar-slot small{
+  color:#64748B !important;
+  font-size:10px !important;
+}
+
+.slot-free{
+  border-left-color:#10B981 !important;
+}
+
+.slot-pending{
+  border-left-color:#F59E0B !important;
+}
+
+.slot-confirmed{
+  border-left-color:#2563EB !important;
+}
+
+.slot-cancelled,
+.slot-canceled{
+  border-left-color:#EF4444 !important;
+}
+
+/* ===== COMPACTAR ESTADÍSTICAS REAL ===== */
+
+.stat-card,
+.today-summary div{
+  padding:6px 10px !important;
+  min-height:52px !important;
+  border-radius:10px !important;
+}
+
+.stat-card strong,
+.today-summary strong{
+  font-size:22px !important;
+  line-height:1 !important;
+  margin-bottom:2px !important;
+}
+
+.stat-card span,
+.today-summary span{
+  font-size:11px !important;
+  line-height:1.1 !important;
+}
+
+.stats-grid,
+.today-summary{
+  gap:8px !important;
+}
+
+
+
