@@ -262,29 +262,6 @@ app.post("/api/business/:id/reservations", (req, res) => {
   });
 });
 
-
-app.get("/api/debug/staff", (req, res) => {
-  db.all(`SELECT * FROM businesses`, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: "Error del servidor." });
-    const businesses = (rows || []).map(row => {
-      let business = {};
-      try { business = JSON.parse(row.data); } catch(e) {}
-      return {
-        id: business.id || row.id,
-        businessName: business.businessName || row.businessName,
-        slug: business.slug || row.slug,
-        staff: (business.staff || []).map(s => ({
-          name: s.name,
-          email: s.email,
-          role: s.role,
-          hasPassword: !!(s.password || s.pass)
-        }))
-      };
-    });
-    res.json({ ok:true, businesses });
-  });
-});
-
 app.listen(PORT, () => {
   console.log(`ReservaPro backend activo en http://localhost:${PORT}`);
 });

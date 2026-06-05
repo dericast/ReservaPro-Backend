@@ -1022,8 +1022,104 @@ tr:hover{background:#eef4ff !important;}
 }
 
 
-/* FIX FINAL: permisos por rol */
-.rp-force-hidden-role{display:none!important;}
-body[data-rp-role="Staff"] #staffLogoutBtn{display:inline-block!important;}
-body[data-rp-role="Staff"] .rp-classic-badge::after{content:" · Modo empleado";}
-body[data-rp-role="Recepción"] .rp-classic-badge::after{content:" · Recepción";}
+/* ===== FIX MOVIL: no romper ancho cuando llegan reservas ===== */
+@media(max-width:700px){
+  html, body{
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:hidden !important;
+  }
+
+  .topbar,
+  main.container,
+  .container,
+  #dashboardView,
+  #publicView,
+  .public-card{
+    width:100% !important;
+    max-width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    box-sizing:border-box !important;
+  }
+
+  .container{
+    padding:8px !important;
+  }
+
+  #dashboardView .grid,
+  #dashboardView .rp-dashboard-grid,
+  .grid{
+    display:block !important;
+    grid-template-columns:1fr !important;
+  }
+
+  .panel,
+  .panel.wide{
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:auto !important;
+    box-sizing:border-box !important;
+  }
+
+  #reservationsTable,
+  #historyTable,
+  table{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:auto !important;
+    white-space:nowrap !important;
+  }
+
+  #reservationsTable td:last-child{
+    min-width:260px !important;
+    white-space:normal !important;
+  }
+
+  #reservationsTable .btn,
+  #reservationsTable button,
+  #reservationsTable a{
+    font-size:11px !important;
+    padding:5px 6px !important;
+    margin:2px !important;
+  }
+
+  #reservationsTable .reservationStaff{
+    min-width:110px !important;
+    max-width:130px !important;
+  }
+
+  #premiumCalendarGrid{
+    width:100% !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+  }
+
+  .premium-calendar-head{
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+  }
+
+  .premium-calendar-head h3{
+    width:100% !important;
+    text-align:center !important;
+  }
+
+  .calendar-legend{
+    overflow-x:auto !important;
+    white-space:nowrap !important;
+  }
+
+  .premium-calendar-day{
+    min-width:0 !important;
+    min-height:70px !important;
+    padding:5px !important;
+  }
+
+  .premium-calendar-weekday{
+    font-size:12px !important;
+    padding:5px !important;
+  }
+}

@@ -195,8 +195,6 @@ document.getElementById("registerBtn").onclick=async ()=>{
       pass
     });
 
-    localStorage.removeItem("staffSession");
-    localStorage.setItem("currentRole", "Admin");
     alert("Cuenta creada en backend.");
     loadDashboard();
     return;
@@ -216,8 +214,6 @@ document.getElementById("loginBtn").onclick=async ()=>{
       pass
     });
 
-    localStorage.removeItem("staffSession");
-    localStorage.setItem("currentRole", "Admin");
     loadDashboard();
     return;
   }catch(err){
@@ -624,6 +620,9 @@ ${s.name}
       saveDB();
       backendSaveCurrentBusiness();
       renderReservations();
+      renderSlots();
+      renderCalendarVisual();
+      renderPublicIfOpen();
       renderPremiumCalendar();
     }
   }
@@ -640,6 +639,9 @@ ${s.name}
       saveDB();
       backendSaveCurrentBusiness();
       renderReservations();
+      renderSlots();
+      renderCalendarVisual();
+      renderPublicIfOpen();
       renderPremiumCalendar();
     }
   }
@@ -656,6 +658,9 @@ ${s.name}
       saveDB();
       backendSaveCurrentBusiness();
       renderReservations();
+      renderSlots();
+      renderCalendarVisual();
+      renderPublicIfOpen();
       renderPremiumCalendar();
     }
   }
@@ -1128,7 +1133,7 @@ function RP_normalizePublicContactLinks(){
   const phoneClean = String(u.whatsapp || u.phone || "").replace(/[^\d]/g, "");
 
   if(waBtn){
-    waBtn.href = phoneClean ? "https://wa.me/" + phoneClean + "?text=" + msg : "javascript:void(0)";
+    waBtn.href = phoneClean ? "https://wa.me/" + phoneClean + "?text=" + msg : "#";
     waBtn.target = "_blank";
   }
 
@@ -1145,27 +1150,27 @@ function RP_normalizePublicContactLinks(){
       igBtn.href = ig;
       igBtn.target = "_blank";
     }else{
-      igBtn.href = "javascript:void(0)";
+      igBtn.href = "#";
     }
   }
 
   if(phoneBtn){
     const tel = String(u.phone || u.whatsapp || "").replace(/[^\d+]/g, "");
-    phoneBtn.href = tel ? "tel:" + tel : "javascript:void(0)";
+    phoneBtn.href = tel ? "tel:" + tel : "#";
   }
 
   if(mailBtn){
     const email = String(u.contactEmail || u.email || "").trim();
     mailBtn.href = email
       ? "mailto:" + email + "?subject=" + encodeURIComponent("Solicitud de reserva") + "&body=" + msg
-      : "javascript:void(0)";
+      : "#";
   }
 
   if(mapBtn){
     const loc = String(u.location || "").trim();
     mapBtn.href = loc
       ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(loc)
-      : "javascript:void(0)";
+      : "#";
     mapBtn.target = "_blank";
   }
 }
@@ -1231,6 +1236,8 @@ window.addEventListener("load", () => {
       const clientPhone = document.getElementById("clientPhone").value.trim();
       if((u.blockedClients || []).includes(clientPhone)){
   alert("No puedes hacer reservas con este número.");
+  btn.dataset.sending = "0";
+  btn.disabled = false;
   return;
 }
       const clientEmail = document.getElementById("clientEmail").value.trim();
@@ -1453,7 +1460,7 @@ function RP_startBackendAutoSync(){
     if(publicView && !publicView.classList.contains("hidden")){
       RP_refreshPublicReservationStatus();
     }
-  }, 10000);
+  }, 5000);
 }
 
 window.addEventListener("load", RP_startBackendAutoSync);
@@ -1730,7 +1737,7 @@ function renderTodayAppointments(){
   const u = currentUser && currentUser();
   if(!u) return;
 
-  const today = RP_localDateString(new Date());
+  const today = new Date().toISOString().slice(0,10);
 
   const todayReservations = (u.reservations || []).filter(r=>{
     const slot = (u.slots || []).find(s=>s.id === r.slotId);
@@ -1822,11 +1829,11 @@ Te recordamos que tienes una cita en ${businessName} para ${serviceName} el ${da
 
     const waLink = phone
       ? "https://wa.me/" + phone + "?text=" + encodeURIComponent(message)
-      : "javascript:void(0)";
+      : "#";
 
     const mailLink = email
   ? "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(email) + "&su=" + encodeURIComponent("Recordatorio de cita") + "&body=" + encodeURIComponent(message)
-  : "javascript:void(0)";
+  : "#";
 
     const div = document.createElement("div");
     div.className = "reminder-card";
@@ -1896,7 +1903,7 @@ function renderPremiumCalendar(){
     const div = document.createElement("div");
     div.className = "premium-calendar-day";
 
-    const today = RP_localDateString(new Date());
+    const today = new Date().toISOString().slice(0,10);
     if(dateStr === today){
       div.classList.add("today");
     }
@@ -2985,242 +2992,3 @@ if(galleryFilesInput){
     e.target.value="";
   };
 }
-
-/* =========================================================
-   FIX FINAL EMPLEADO / ROLES / FECHA LOCAL
-   - No borra funciones.
-   - Evita que Staff vea Negocio, Servicios, Clientes, Staff y Sistema.
-   - Mantiene Calendario, Reservas, Historial y Recordatorios.
-   - Corrige día actual usando fecha local, no UTC.
-   - Login empleado carga negocio desde backend y aplica rol antes de mostrar panel.
-   ========================================================= */
-function RP_localDateString(d){
-  const date = d instanceof Date ? d : new Date();
-  const y = date.getFullYear();
-  const m = String(date.getMonth()+1).padStart(2,"0");
-  const day = String(date.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
-}
-
-function RP_getActiveRole(){
-  const session = (typeof getStaffSession === "function") ? getStaffSession() : null;
-  if(session && session.role) return session.role;
-  return localStorage.getItem("currentRole") || "Admin";
-}
-
-function RP_panelHas(panel, selectors){
-  return selectors.some(sel => {
-    try{return !!panel.querySelector(sel);}catch(e){return false;}
-  });
-}
-
-function RP_groupForPanel(panel){
-  const groups = [];
-  if(RP_panelHas(panel, ['#businessName','#businessLogoFile','#businessSlug','#publicLink'])) groups.push('negocio');
-  if(RP_panelHas(panel, ['#serviceName','#servicesTable','#slotDate','#slotsTable','#addServiceBtn','#addSlotBtn'])) groups.push('servicios');
-  if(RP_panelHas(panel, ['#premiumCalendarGrid','#calendarVisual'])) groups.push('calendario','inicio');
-  if(RP_panelHas(panel, ['#reservationsTable'])) groups.push('reservas','inicio');
-  if(RP_panelHas(panel, ['#historyTable'])) groups.push('historial','reservas');
-  if(RP_panelHas(panel, ['#appointmentRemindersBox'])) groups.push('recordatorios');
-  if(RP_panelHas(panel, ['#statTotal','#todayTotal'])) groups.push('resumen');
-  if(RP_panelHas(panel, ['#frequentClientsTable','#clientProfileSelect'])) groups.push('clientes');
-  if(RP_panelHas(panel, ['#staffTable','#addStaffBtn','#staffStatsTable','#currentRoleSelect'])) groups.push('staff');
-  if(RP_panelHas(panel, ['#syncBackendBtn','#backupDownloadBtn','#backupUploadInput'])) groups.push('sistema');
-  return Array.from(new Set(groups));
-}
-
-function RP_allowedGroupsForRole(role){
-  if(role === "Staff") return new Set(['inicio','calendario','reservas','historial','recordatorios']);
-  if(role === "Recepción") return new Set(['inicio','calendario','reservas','historial','clientes','recordatorios','servicios']);
-  return null; // Admin ve todo
-}
-
-function RP_forceRoleUI(){
-  const role = RP_getActiveRole();
-  const allowed = RP_allowedGroupsForRole(role);
-  const session = (typeof getStaffSession === "function") ? getStaffSession() : null;
-
-  document.body.setAttribute('data-rp-role', role);
-
-  // selector de rol siempre bloqueado para sesión real de empleado
-  const roleSelect = document.getElementById('currentRoleSelect');
-  if(roleSelect){
-    roleSelect.value = role;
-    roleSelect.disabled = !!session;
-  }
-
-  // panels: no dependemos solo de títulos, usamos IDs internos
-  const dashboard = document.getElementById('dashboardView');
-  if(dashboard){
-    dashboard.querySelectorAll('.panel').forEach(panel=>{
-      panel.classList.remove('rp-force-hidden-role');
-      if(allowed){
-        const groups = RP_groupForPanel(panel);
-        const canSee = groups.length && groups.some(g=>allowed.has(g));
-        if(!canSee) panel.classList.add('rp-force-hidden-role');
-      }
-    });
-  }
-
-  // Menú lateral clásico: ocultar botones que el rol no puede usar
-  document.querySelectorAll('.rp-nav-btn').forEach(btn=>{
-    const group = btn.dataset.group;
-    btn.classList.remove('rp-force-hidden-role');
-    if(allowed && group && group !== 'todo' && !allowed.has(group)){
-      btn.classList.add('rp-force-hidden-role');
-    }
-    if(allowed && group === 'todo'){
-      btn.classList.add('rp-force-hidden-role');
-    }
-  });
-
-  // Si el botón activo quedó oculto, manda a Inicio
-  const active = document.querySelector('.rp-nav-btn.active');
-  if(active && active.classList.contains('rp-force-hidden-role')){
-    const inicio = document.querySelector('.rp-nav-btn[data-group="inicio"]');
-    if(inicio) inicio.click();
-  }
-
-  // Staff solo ve/asigna su propio filtro, no cambia trabajador
-  if(role === "Staff" && session){
-    const filter = document.getElementById('staffFilter');
-    if(filter){
-      filter.value = session.name || '';
-      filter.disabled = true;
-    }
-    document.querySelectorAll('.reservationStaff').forEach(sel=>{
-      sel.disabled = true;
-    });
-    document.querySelectorAll('[data-a="reschedule"]').forEach(btn=>{
-      btn.disabled = true;
-      btn.style.display = 'none';
-    });
-  }
-}
-
-// Reemplazo seguro del login de empleado.
-function setupStaffLogin(){
-  const btn = document.getElementById("staffLoginBtn");
-  const emailInput = document.getElementById("staffLoginEmail");
-  const passInput = document.getElementById("staffLoginPassword");
-  if(!btn || !emailInput || !passInput) return;
-  if(btn.dataset.rpStaffFinal === "1") return;
-  btn.dataset.rpStaffFinal = "1";
-
-  btn.onclick = async ()=>{
-    const email = emailInput.value.trim().toLowerCase();
-    const password = passInput.value.trim();
-    if(!email || !password){
-      alert("Escribe correo y contraseña.");
-      return;
-    }
-
-    btn.disabled = true;
-    const oldText = btn.textContent;
-    btn.textContent = "Entrando...";
-
-    try{
-      let business = null;
-      let staff = null;
-
-      // 1) Backend real: permite entrar desde cero sin abrir admin primero.
-      try{
-        const result = await apiRequest("/api/staff-login",{
-          method:"POST",
-          body:JSON.stringify({email, password})
-        });
-        if(result && result.business && result.staff){
-          business = result.business;
-          staff = result.staff;
-        }
-      }catch(e){
-        console.warn("Staff backend login falló, probando local.", e && e.message ? e.message : e);
-      }
-
-      // 2) Fallback local/cache, por si estás probando en PC sin backend actualizado.
-      if(!business || !staff){
-        const users = (db.users || []).slice();
-        try{
-          const cache = JSON.parse(localStorage.getItem("reservapro_staff_login_cache") || "[]");
-          cache.forEach(x=>users.push({id:x.businessId,businessName:x.businessName,slug:x.slug,staff:x.staff||[]}));
-        }catch(e){}
-
-        for(const u of users){
-          const found = (u.staff || []).find(s=>
-            String(s.email || "").trim().toLowerCase() === email &&
-            String(s.password || s.pass || "").trim() === password
-          );
-          if(found){ business = u; staff = found; break; }
-        }
-      }
-
-      if(!business || !staff){
-        alert("Empleado no encontrado o contraseña incorrecta.");
-        return;
-      }
-
-      const normalized = upsertLocalBusinessFromBackend(business) || normalizeUser(business);
-      db.currentUserId = normalized.id;
-      saveDB();
-
-      const role = staff.role || "Staff";
-      localStorage.setItem("staffSession", JSON.stringify({
-        businessId: normalized.id,
-        staffId: staff.id || staff.email || staff.name,
-        name: staff.name || staff.email || "Empleado",
-        email: staff.email || email,
-        role
-      }));
-      localStorage.setItem("currentRole", role);
-
-      alert("Bienvenido " + (staff.name || "empleado"));
-      loadDashboard();
-      setTimeout(()=>{
-        try{ if(window.RP_buildClassicDashboard) window.RP_buildClassicDashboard(); }catch(e){}
-        RP_forceRoleUI();
-        try{ renderPremiumCalendar(); }catch(e){}
-      },300);
-    }finally{
-      btn.disabled = false;
-      btn.textContent = oldText;
-    }
-  };
-}
-
-// Limpieza al entrar como admin: no mezclar sesión empleado con sesión dueño.
-(function(){
-  const loginBtn = document.getElementById('loginBtn');
-  if(loginBtn && loginBtn.dataset.rpAdminClean !== '1'){
-    loginBtn.dataset.rpAdminClean = '1';
-    loginBtn.addEventListener('click', ()=>{
-      localStorage.removeItem('staffSession');
-      localStorage.setItem('currentRole','Admin');
-    }, true);
-  }
-})();
-
-// Guardar cache local al crear staff y forzar guardado backend si existe usuario actual.
-function RP_refreshStaffLoginCache(){
-  try{
-    localStorage.setItem("reservapro_staff_login_cache", JSON.stringify((db.users||[]).map(u=>({
-      businessId:u.id,
-      businessName:u.businessName,
-      slug:u.slug,
-      staff:u.staff||[]
-    }))));
-  }catch(e){}
-}
-
-setInterval(()=>{
-  try{ setupStaffLogin(); }catch(e){}
-  try{ RP_forceRoleUI(); }catch(e){}
-  try{ RP_refreshStaffLoginCache(); }catch(e){}
-},1200);
-
-window.addEventListener('load', ()=>setTimeout(()=>{
-  try{ setupStaffLogin(); }catch(e){}
-  try{ RP_forceRoleUI(); }catch(e){}
-},1000));
-document.addEventListener('click', ()=>setTimeout(()=>{
-  try{ RP_forceRoleUI(); }catch(e){}
-},50));
