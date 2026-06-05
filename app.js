@@ -1,7 +1,10 @@
 const LS_KEY = "reservapro_v36_data";
 let db = loadDB();
 let publicBusinessId = null;
-const API_URL = "http://localhost:3000";
+const API_URL = (
+  location.hostname === "localhost" ||
+  location.hostname === "127.0.0.1"
+) ? "http://localhost:3000" : "https://reservapro-backend.onrender.com";
 let backendMode = true;
 
 function loadDB(){
@@ -23,6 +26,8 @@ function normalizeUser(u){
     email: u.email || "",
     pass: u.pass || "",
     businessName: u.businessName || "ReservaPro",
+    businessLogo: u.businessLogo || "",
+    workGallery: Array.isArray(u.workGallery) ? u.workGallery : [],
     slug: u.slug || slugify(u.businessName || "negocio"),
     desc: u.desc || "Panel profesional de reservas.",
     whatsapp: u.whatsapp || "",
@@ -33,6 +38,7 @@ function normalizeUser(u){
     services: Array.isArray(u.services) ? u.services : [],
     slots: Array.isArray(u.slots) ? u.slots : [],
     reservations: Array.isArray(u.reservations) ? u.reservations : [],
+    staff: Array.isArray(u.staff) ? u.staff : [],
     gallery: Array.isArray(u.gallery) ? u.gallery : []
   };
 }
@@ -236,6 +242,10 @@ function loadDashboard(){
   const u=currentUser(); if(!u) return show("authView");
   Object.assign(u, normalizeUser(u));
   document.getElementById("businessName").value=u.businessName;
+  document.getElementById("businessLogo").value = u.businessLogo || "";
+renderBusinessLogoPreview();
+document.getElementById("businessLogo").oninput=renderBusinessLogoPreview;
+renderWorkGalleryPreview();
   document.getElementById("businessDesc").value=u.desc;
   document.getElementById("businessWhatsapp").value=u.whatsapp;
   document.getElementById("businessInstagram").value=u.instagram;
@@ -244,12 +254,22 @@ function loadDashboard(){
   document.getElementById("businessLocation").value=u.location;
   document.getElementById("businessSlug").value=u.slug;
   document.getElementById("publicLink").value=publicUrlFor(u);
-  setupGalleryEvents(); renderServices(); renderGallery(); renderSlots(); renderCalendarVisual(); renderReservations(); renderSession(); setupBackupSimple();
+  ; renderServices(); renderSlots(); renderCalendarVisual(); renderReservations(); renderSession(); setupBackupSimple();
     show("dashboardView");
+    setTimeout(()=>{
+  try{
+    const session = getStaffSession && getStaffSession();
+
+    if(!session){
+      setupPremiumCalendar();
+    }
+  }catch(e){}
+},500);
 }
 document.getElementById("saveProfileBtn").onclick=()=>{
   const u=currentUser(); if(!u) return;
   u.businessName=document.getElementById("businessName").value.trim();
+  u.businessLogo=document.getElementById("businessLogo").value.trim();
   u.desc=document.getElementById("businessDesc").value.trim();
   u.whatsapp=document.getElementById("businessWhatsapp").value.trim();
   u.instagram=document.getElementById("businessInstagram").value.trim();
@@ -561,6 +581,8 @@ function renderCalendarVisual(){
 
 function renderReservations(){
   const u=currentUser(), tb=document.getElementById("reservationsTable"), hist=document.getElementById("historyTable");
+  const staffSession = getStaffSession && getStaffSession();
+const isStaffMode = staffSession && staffSession.role === "Staff";
   tb.innerHTML=""; hist.innerHTML="";
   (u.reservations||[]).forEach(r=>{
     const slot=(u.slots||[]).find(s=>s.id===r.slotId);
@@ -573,15 +595,138 @@ function renderReservations(){
     const tr=document.createElement("tr");
     tr.innerHTML=`<td>${r.clientName}</td><td>${r.clientPhone}</td><td>${r.serviceName}</td><td>${slot?slot.date+" "+slot.time:"-"}</td><td class="status-${String(r.status).toLowerCase()}">${r.status}</td>
       <td>
+<select class="reservationStaff" data-id="${r.id}" ${isStaffMode ? "disabled" : ""}>
+<option value="">Sin asignar</option>
+${((currentUser().staff) || []).map(s=>`
+<option value="${s.name}" ${r.staff===s.name?'selected':''}>
+${s.name}
+</option>
+`).join("")}
+</select>
+</td>
         <button class="btn small danger" data-a="cancel">Cancelar</button>
         <button class="btn small ok" data-a="confirm">Confirmar</button>
         <button class="btn small" data-a="complete">Completar</button>
+        <button class="btn small" data-a="reschedule">Reagendar</button>
         <a class="btn small" target="_blank" href="${links.wa}">Avisar WhatsApp</a>
         <a class="btn small" target="_blank" href="${links.mail}">Avisar correo</a>
       </td>`;
-    tr.querySelector('[data-a="cancel"]').onclick=()=>{r.status="Cancelada"; saveDB(); renderReservations(); renderSlots(); renderCalendarVisual(); renderPublicIfOpen();};
-    tr.querySelector('[data-a="confirm"]').onclick=()=>{r.status="Confirmada"; saveDB(); renderReservations(); renderSlots(); renderCalendarVisual(); renderPublicIfOpen();};
-    tr.querySelector('[data-a="complete"]').onclick=()=>{r.status="Completada"; saveDB(); renderReservations(); renderSlots(); renderCalendarVisual(); renderPublicIfOpen();};
+    tr.querySelector('[data-a="cancel"]').onclick=()=>{backendLoadBusinessBySlug(currentUser().slug).then(result=>{
+  if(result && result.business){
+    const updated=normalizeUser(result.business);
+    const idx=db.users.findIndex(x=>x.id===updated.id);
+    if(idx>=0) db.users[idx]=updated;
+
+    const rr=db.users[idx].reservations.find(x=>x.id===r.id);
+    if(rr){
+      rr.status="Cancelada";
+      saveDB();
+      backendSaveCurrentBusiness();
+      renderReservations();
+      renderPremiumCalendar();
+    }
+  }
+});renderReservations(); renderSlots(); renderCalendarVisual(); renderPublicIfOpen();};
+    tr.querySelector('[data-a="confirm"]').onclick=()=>{backendLoadBusinessBySlug(currentUser().slug).then(result=>{
+  if(result && result.business){
+    const updated=normalizeUser(result.business);
+    const idx=db.users.findIndex(x=>x.id===updated.id);
+    if(idx>=0) db.users[idx]=updated;
+
+    const rr=db.users[idx].reservations.find(x=>x.id===r.id);
+    if(rr){
+      rr.status="Confirmada";
+      saveDB();
+      backendSaveCurrentBusiness();
+      renderReservations();
+      renderPremiumCalendar();
+    }
+  }
+});renderReservations(); renderSlots(); renderCalendarVisual(); renderPublicIfOpen();};
+    tr.querySelector('[data-a="complete"]').onclick=()=>{backendLoadBusinessBySlug(currentUser().slug).then(result=>{
+  if(result && result.business){
+    const updated=normalizeUser(result.business);
+    const idx=db.users.findIndex(x=>x.id===updated.id);
+    if(idx>=0) db.users[idx]=updated;
+
+    const rr=db.users[idx].reservations.find(x=>x.id===r.id);
+    if(rr){
+      rr.status="Completada";
+      saveDB();
+      backendSaveCurrentBusiness();
+      renderReservations();
+      renderPremiumCalendar();
+    }
+  }
+}); renderReservations(); renderSlots(); renderCalendarVisual(); renderPublicIfOpen();};
+tr.querySelector('[data-a="reschedule"]').onclick=()=>{
+  const u=currentUser();
+  if(!u) return;
+
+  const availableSlots=(u.slots||[]).filter(s=>{
+    const reserved=(u.reservations||[]).some(rr=>
+      rr.slotId===s.id &&
+      rr.id!==r.id &&
+      rr.status!=="Cancelada" &&
+      rr.status!=="Completada"
+    );
+
+    if(reserved) return false;
+
+    const dt=new Date(s.date+"T"+s.time);
+    return dt>new Date();
+  });
+
+  if(!availableSlots.length){
+    alert("No hay horarios disponibles para reagendar.");
+    return;
+  }
+
+  let msg="Elige el número del nuevo horario:\n\n";
+
+  availableSlots.forEach((s,i)=>{
+    msg+=(i+1)+". "+s.date+" "+s.time+"\n";
+  });
+
+  const choice=prompt(msg);
+
+  if(!choice) return;
+
+  const index=parseInt(choice)-1;
+  const selected=availableSlots[index];
+
+  if(!selected){
+    alert("Opción inválida.");
+    return;
+  }
+
+  r.slotId=selected.id;
+
+  saveDB();
+
+  try{
+    backendSaveCurrentBusiness();
+  }catch(e){}
+
+  renderReservations();
+
+  alert("Cita reagendada correctamente.");
+};
+const staffSelect = tr.querySelector(".reservationStaff");
+
+if(staffSelect){
+  staffSelect.onchange = ()=>{
+
+    r.staff = staffSelect.value;
+    r.staffId = staffSelect.value;
+
+    saveDB();
+
+    try{
+      backendSaveCurrentBusiness();
+    }catch(e){}
+  };
+}
     tb.appendChild(tr);
   });
 }
@@ -632,6 +777,33 @@ function renderClientStatus(u){
 }
 async function renderPublic(u){
   document.getElementById("pubName").textContent=u.businessName || "ReservaPro";
+  const logoBox=document.getElementById("publicBusinessLogo");
+  const publicGallery=document.getElementById("publicWorkGallery");
+
+if(publicGallery){
+  publicGallery.innerHTML="";
+
+  const imgs=Array.isArray(u.workGallery) ? u.workGallery : [];
+
+  if(!imgs.length){
+    publicGallery.classList.add("hidden");
+  }else{
+    publicGallery.classList.remove("hidden");
+
+    imgs.forEach(img=>{
+      const item=document.createElement("div");
+      item.className="gallery-item";
+      item.innerHTML=`<img src="${img}">`;
+      publicGallery.appendChild(item);
+    });
+  }
+}
+
+if(logoBox){
+  logoBox.innerHTML=u.businessLogo
+    ? `<img src="${u.businessLogo}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ccc;">`
+    : "";
+}
   document.getElementById("pubDesc").textContent=u.desc || "Panel profesional de reservas.";
   document.getElementById("pubLocation").textContent=u.location || "";
 
@@ -664,6 +836,7 @@ document.getElementById("requestReservationBtn").onclick=async ()=>{
   const clientName=document.getElementById("clientName").value.trim();
   const clientPhone=document.getElementById("clientPhone").value.trim();
   const clientEmail=document.getElementById("clientEmail") ? document.getElementById("clientEmail").value.trim() : "";
+  const selectedStaff = document.getElementById("clientStaff") ? document.getElementById("clientStaff").value : "";
   const staffId=document.getElementById("clientStaff") ? document.getElementById("clientStaff").value : defaultStaffId(u);
   const serviceId=document.getElementById("clientService").value;
   const slotId=document.getElementById("clientSlot").value;
@@ -684,6 +857,7 @@ document.getElementById("requestReservationBtn").onclick=async ()=>{
     clientName,
     clientPhone,
     clientEmail,
+    staff: selectedStaff,
     staffId,
     serviceId,
     serviceName:service ? service.name : "Servicio",
@@ -882,3 +1056,1924 @@ function setupBackendSyncButton(){
   else if(currentUser()) loadDashboard();
   else show("authView");
 })();
+
+/* FIX BOTÓN "GUARDAR AHORA EN BACKEND"
+   Pega este bloque AL FINAL de app.js.
+   No toca link, login ni reservas.
+*/
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const btn =
+      document.getElementById("syncBackendBtn") ||
+      document.getElementById("backendSaveBtn") ||
+      document.querySelector('button[data-action="save-backend"]');
+
+    const status =
+      document.getElementById("syncBackendStatus") ||
+      document.getElementById("backendSaveStatus");
+
+    if (!btn) {
+      console.warn("No se encontró el botón Guardar ahora en backend.");
+      return;
+    }
+
+    btn.onclick = async () => {
+      try {
+        if (status) status.textContent = "Guardando...";
+
+        if (typeof backendSaveCurrentBusiness !== "function") {
+          if (status) status.textContent = "Error: no existe backendSaveCurrentBusiness().";
+          alert("No se encontró la función de guardar en backend.");
+          return;
+        }
+
+        const ok = await backendSaveCurrentBusiness();
+
+        if (status) {
+          status.textContent = ok
+            ? "Datos guardados en backend."
+            : "No se pudo guardar. Revisa que el backend esté activo.";
+        }
+
+        alert(ok ? "Datos guardados en backend." : "No se pudo guardar en backend.");
+      } catch (error) {
+        console.error(error);
+        if (status) status.textContent = "Error guardando en backend.";
+        alert("Error guardando en backend.");
+      }
+    };
+  }, 500);
+});
+
+/* FIX MÓVIL LIMPIO - VISTA PÚBLICA
+   Pega este bloque AL FINAL de app.js.
+   No oculta botones.
+   No cambia login.
+   No cambia link público.
+*/
+
+function RP_normalizePublicContactLinks(){
+  const u = db.users.find(x => x.id === publicBusinessId);
+  if(!u) return;
+
+  const waBtn = document.getElementById("waBtn");
+  const igBtn = document.getElementById("igBtn");
+  const phoneBtn = document.getElementById("phoneBtn");
+  const mailBtn = document.getElementById("mailBtn");
+  const mapBtn = document.getElementById("mapBtn");
+
+  const msg = encodeURIComponent("Hola, quiero información para solicitar una reserva.");
+  const phoneClean = String(u.whatsapp || u.phone || "").replace(/[^\d]/g, "");
+
+  if(waBtn){
+    waBtn.href = phoneClean ? "https://wa.me/" + phoneClean + "?text=" + msg : "javascript:void(0)";
+    waBtn.target = "_blank";
+  }
+
+  if(igBtn){
+    let ig = String(u.instagram || "").trim();
+
+    if(ig){
+      ig = ig.replace("@", "");
+
+      if(!ig.startsWith("http")){
+        ig = "https://instagram.com/" + ig;
+      }
+
+      igBtn.href = ig;
+      igBtn.target = "_blank";
+    }else{
+      igBtn.href = "javascript:void(0)";
+    }
+  }
+
+  if(phoneBtn){
+    const tel = String(u.phone || u.whatsapp || "").replace(/[^\d+]/g, "");
+    phoneBtn.href = tel ? "tel:" + tel : "javascript:void(0)";
+  }
+
+  if(mailBtn){
+    const email = String(u.contactEmail || u.email || "").trim();
+    mailBtn.href = email
+      ? "mailto:" + email + "?subject=" + encodeURIComponent("Solicitud de reserva") + "&body=" + msg
+      : "javascript:void(0)";
+  }
+
+  if(mapBtn){
+    const loc = String(u.location || "").trim();
+    mapBtn.href = loc
+      ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(loc)
+      : "javascript:void(0)";
+    mapBtn.target = "_blank";
+  }
+}
+
+function RP_fixReserveButtonClick(){
+  const btn = document.getElementById("requestReservationBtn");
+  if(!btn) return;
+
+  // Si el botón original ya está funcionando, esto no lo rompe.
+  // Solo evita que en móvil se comporte como submit de formulario.
+  btn.setAttribute("type", "button");
+
+  btn.addEventListener("touchend", function(ev){
+    ev.preventDefault();
+    btn.click();
+  }, {passive:false});
+}
+
+function RP_applyPublicMobileCleanFix(){
+  setTimeout(()=>{
+    RP_normalizePublicContactLinks();
+    RP_fixReserveButtonClick();
+  }, 300);
+}
+
+window.addEventListener("load", RP_applyPublicMobileCleanFix);
+window.addEventListener("hashchange", RP_applyPublicMobileCleanFix);
+
+// Cuando se abre/renderiza la vista pública, aplica el fix sin cambiar nada más.
+document.addEventListener("click", ()=>{
+  const publicView = document.getElementById("publicView");
+  if(publicView && !publicView.classList.contains("hidden")){
+    RP_applyPublicMobileCleanFix();
+  }
+});
+
+/* FIX FINAL SOLICITAR RESERVA - UNA SOLA VEZ */
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const oldBtn = document.getElementById("requestReservationBtn");
+    if (!oldBtn) return;
+
+    const btn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(btn, oldBtn);
+
+    btn.type = "button";
+    btn.dataset.sending = "0";
+
+    btn.onclick = async function () {
+      if (btn.dataset.sending === "1") return;
+      btn.dataset.sending = "1";
+      btn.disabled = true;
+
+      const u = db.users.find(x => x.id === publicBusinessId);
+      if (!u) {
+        alert("No se encontró el negocio.");
+        btn.dataset.sending = "0";
+        btn.disabled = false;
+        return;
+      }
+
+      const clientName = document.getElementById("clientName").value.trim();
+      const clientPhone = document.getElementById("clientPhone").value.trim();
+      if((u.blockedClients || []).includes(clientPhone)){
+  alert("No puedes hacer reservas con este número.");
+  return;
+}
+      const clientEmail = document.getElementById("clientEmail").value.trim();
+      const serviceId = document.getElementById("clientService").value;
+      const slotId = document.getElementById("clientSlot").value;
+
+      if (!clientName || !clientPhone || !serviceId || !slotId) {
+        alert("Completa los datos de la reserva.");
+        btn.dataset.sending = "0";
+        btn.disabled = false;
+        return;
+      }
+
+      const service = (u.services || []).find(s => s.id === serviceId);
+
+      const selectedStaff = document.getElementById("clientStaff")
+  ? document.getElementById("clientStaff").value.trim()
+  : "";
+
+      const reservation = {
+        id: uid(),
+        clientName,
+        clientPhone,
+        clientEmail,
+        staff: selectedStaff,
+        staffId: selectedStaff,
+        serviceId,
+        serviceName: service ? service.name : "Servicio",
+        slotId,
+        status: "Pendiente",
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        if (typeof backendCreateReservation === "function") {
+          const result = await backendCreateReservation(u.id, reservation);
+
+          if (result && result.business) {
+            const updated = normalizeUser(result.business);
+            const index = db.users.findIndex(x => x.id === updated.id);
+            if (index >= 0) db.users[index] = updated;
+            else db.users.push(updated);
+            publicBusinessId = updated.id;
+            saveDB();
+          }
+        } else {
+          u.reservations.push(reservation);
+          saveDB();
+        }
+
+        localStorage.setItem("lastClientReservation_" + publicBusinessId, reservation.id);
+
+        const box = document.getElementById("requestResult");
+        if (box) {
+          box.innerHTML = "<strong>Solicitud enviada.</strong><br>Tu reserva quedó pendiente de confirmación.";
+          box.classList.remove("hidden");
+        }
+
+        alert("Reserva enviada.");
+      } catch (e) {
+        console.error(e);
+        alert("No se pudo enviar la reserva.");
+        btn.dataset.sending = "0";
+        btn.disabled = false;
+      }
+    };
+  }, 500);
+});
+
+/* MANTENER MENSAJE PENDIENTE DESPUÉS DE REFRESH */
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const businessId = publicBusinessId;
+    if (!businessId) return;
+
+    const last = localStorage.getItem("lastClientReservation_" + businessId);
+    if (!last) return;
+
+    const box = document.getElementById("requestResult");
+    if (box) {
+      box.innerHTML = "<strong>Solicitud enviada.</strong><br>Tu reserva sigue pendiente de confirmación.";
+      box.classList.remove("hidden");
+    }
+  }, 800);
+});
+
+/* FIX SYNC RESERVAS BACKEND
+   Pega este bloque AL FINAL de app.js.
+
+   Arregla:
+   1. Que el panel del dueño actualice reservas desde backend sin tener que ir a otra pestaña.
+   2. Que el cliente vea si su reserva fue confirmada/cancelada/completada después de refresh.
+   3. Hace actualización automática cada pocos segundos.
+*/
+
+function RP_findReservationInBusiness(business, reservationId){
+  if(!business || !reservationId) return null;
+  return (business.reservations || []).find(r => String(r.id) === String(reservationId)) || null;
+}
+
+function RP_currentPublicSlug(){
+  const hash = window.location.hash || "";
+  if(hash.startsWith("#/")) return hash.slice(2).trim();
+  return "";
+}
+
+async function RP_refreshOwnerDashboardFromBackend(){
+  const u = currentUser && currentUser();
+  if(!u || !u.slug || typeof backendLoadBusinessBySlug !== "function") return;
+
+  try{
+    const result = await backendLoadBusinessBySlug(u.slug);
+    if(!result || !result.business) return;
+
+    const updated = normalizeUser(result.business);
+    const index = db.users.findIndex(x => x.id === updated.id);
+
+    if(index >= 0){
+      db.users[index] = updated;
+    }else{
+      db.users.push(updated);
+    }
+
+    db.currentUserId = updated.id;
+    saveDB();
+
+    try{ renderReservations(); }catch(e){}
+    try{ renderSlots(); }catch(e){}
+    try{ renderCalendarVisual(); }catch(e){}
+    try{ renderPremiumCalendar(); }catch(e){}
+    try{ renderStatsDashboard(); }catch(e){}
+    try{ renderPaymentsSummary(); }catch(e){}
+  }catch(err){
+    console.warn("No se pudo sincronizar panel desde backend.", err);
+  }
+}
+
+async function RP_refreshPublicReservationStatus(){
+  const slug = RP_currentPublicSlug();
+  if(!slug || typeof backendLoadBusinessBySlug !== "function") return;
+
+  try{
+    const result = await backendLoadBusinessBySlug(slug);
+    if(!result || !result.business) return;
+
+    const updated = normalizeUser(result.business);
+    const index = db.users.findIndex(x => x.id === updated.id);
+
+    if(index >= 0){
+      db.users[index] = updated;
+    }else{
+      db.users.push(updated);
+    }
+
+    publicBusinessId = updated.id;
+    saveDB();
+
+    const reservationId =
+      localStorage.getItem("lastClientReservation_" + updated.id) ||
+      localStorage.getItem(clientReservationKey(updated.id));
+
+    const box = document.getElementById("requestResult");
+    if(!box || !reservationId) return;
+
+    const reservation = RP_findReservationInBusiness(updated, reservationId);
+    if(!reservation) return;
+
+    let text = "";
+
+    if(reservation.status === "Confirmada"){
+      text = "<strong>Reserva confirmada.</strong><br>Tu reserva fue confirmada por el negocio.";
+    }else if(reservation.status === "Cancelada"){
+      text = "<strong>Reserva cancelada.</strong><br>Tu reserva fue cancelada por el negocio.";
+    }else if(reservation.status === "Completada"){
+      text = "<strong>Reserva completada.</strong><br>Gracias por visitarnos.";
+    }else{
+      text = "<strong>Solicitud enviada.</strong><br>Tu reserva sigue pendiente de confirmación.";
+    }
+
+    renderPublic(updated);
+
+setTimeout(()=>{
+  const box2 = document.getElementById("requestResult");
+  if(box2){
+    box2.innerHTML = text;
+    box2.classList.remove("hidden");
+  }
+},100);
+
+  }catch(err){
+    console.warn("No se pudo actualizar estado público.", err);
+  }
+}
+
+function RP_startBackendAutoSync(){
+  if(window.RP_BACKEND_SYNC_STARTED) return;
+  window.RP_BACKEND_SYNC_STARTED = true;
+
+  setTimeout(()=>{
+    const dashboard = document.getElementById("dashboardView");
+    const publicView = document.getElementById("publicView");
+
+    if(dashboard && !dashboard.classList.contains("hidden")){
+      RP_refreshOwnerDashboardFromBackend();
+    }
+
+    if(publicView && !publicView.classList.contains("hidden")){
+      RP_refreshPublicReservationStatus();
+    }
+  }, 1000);
+
+  setInterval(()=>{
+    const dashboard = document.getElementById("dashboardView");
+    const publicView = document.getElementById("publicView");
+
+    if(dashboard && !dashboard.classList.contains("hidden")){
+      RP_refreshOwnerDashboardFromBackend();
+    }
+
+    if(publicView && !publicView.classList.contains("hidden")){
+      RP_refreshPublicReservationStatus();
+    }
+  }, 10000);
+}
+
+window.addEventListener("load", RP_startBackendAutoSync);
+window.addEventListener("hashchange", ()=>{
+  setTimeout(()=>{
+    RP_refreshPublicReservationStatus();
+  }, 1000);
+});
+
+/* FIX STATUS BACKEND SYNC
+   Pega esto AL FINAL de app.js
+
+   Guarda online:
+   - Confirmada
+   - Cancelada
+   - Completada
+*/
+
+async function RP_saveReservationStatusOnline(reservationId, newStatus){
+  const u = currentUser && currentUser();
+  if(!u) return false;
+
+  const reservation = (u.reservations || []).find(r => String(r.id) === String(reservationId));
+  if(!reservation) return false;
+
+  reservation.status = newStatus;
+  saveDB();
+
+  try{
+    if(typeof backendSaveCurrentBusiness === "function"){
+      await backendSaveCurrentBusiness();
+    }
+
+    return true;
+  }catch(err){
+    console.error("STATUS_BACKEND_SAVE_ERROR", err);
+    return false;
+  }
+}
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+
+    // CONFIRMAR
+    document.querySelectorAll("[data-action='confirm-reservation']").forEach(btn => {
+      btn.onclick = async function(){
+        const id = btn.dataset.id || btn.getAttribute("data-id");
+        if(!id) return;
+
+        const ok = await RP_saveReservationStatusOnline(id, "Confirmada");
+
+        if(ok){
+          try{ renderReservations(); }catch(e){}
+        }
+      };
+    });
+
+    // COMPLETAR
+    document.querySelectorAll("[data-action='complete-reservation']").forEach(btn => {
+      btn.onclick = async function(){
+        const id = btn.dataset.id || btn.getAttribute("data-id");
+        if(!id) return;
+
+        const ok = await RP_saveReservationStatusOnline(id, "Completada");
+
+        if(ok){
+          try{ renderReservations(); }catch(e){}
+        }
+      };
+    });
+
+    // CANCELAR
+    document.querySelectorAll("[data-action='cancel-reservation']").forEach(btn => {
+      btn.onclick = async function(){
+        const id = btn.dataset.id || btn.getAttribute("data-id");
+        if(!id) return;
+
+        const ok = await RP_saveReservationStatusOnline(id, "Cancelada");
+
+        if(ok){
+          try{ renderReservations(); }catch(e){}
+        }
+      };
+    });
+
+  }, 1000);
+});
+
+function renderSimpleStats(){
+  const u = currentUser && currentUser();
+  if(!u) return;
+
+  const reservations = u.reservations || [];
+
+  const set = (id, value)=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = value;
+  };
+
+  set("statTotal", reservations.length);
+  set("statPending", reservations.filter(r=>r.status==="Pendiente").length);
+  set("statConfirmed", reservations.filter(r=>r.status==="Confirmada").length);
+  set("statCompleted", reservations.filter(r=>r.status==="Completada").length);
+  set("statCancelled", reservations.filter(r=>r.status==="Cancelada").length);
+
+  const serviceCount = {};
+  reservations.forEach(r=>{
+    const name = r.serviceName || "Servicio";
+    serviceCount[name] = (serviceCount[name] || 0) + 1;
+  });
+
+  const topService = Object.entries(serviceCount).sort((a,b)=>b[1]-a[1])[0];
+  set("statTopService", topService ? `${topService[0]} (${topService[1]})` : "-");
+
+  const dayCount = {};
+  reservations.forEach(r=>{
+    const slot = (u.slots || []).find(s=>s.id===r.slotId);
+    if(slot && slot.date){
+      dayCount[slot.date] = (dayCount[slot.date] || 0) + 1;
+    }
+  });
+
+  const topDay = Object.entries(dayCount).sort((a,b)=>b[1]-a[1])[0];
+  set("statTopDay", topDay ? `${topDay[0]} (${topDay[1]})` : "-");
+}
+
+setInterval(()=>{
+  try{ renderSimpleStats(); }catch(e){}
+}, 3000);
+
+function renderFrequentClients(){
+  const u = currentUser && currentUser();
+  const table = document.getElementById("frequentClientsTable");
+
+  if(!u || !table) return;
+
+  const map = {};
+
+  (u.reservations || []).forEach(r=>{
+    const key = (r.clientPhone || r.clientName || "").trim();
+
+    if(!key) return;
+
+    if(!map[key]){
+      map[key] = {
+        name: r.clientName || "-",
+        phone: r.clientPhone || "-",
+        count: 0,
+        last: r.createdAt || "",
+        notes: (u.clientNotes && u.clientNotes[r.clientPhone]) || "",
+      };
+    }
+
+    map[key].count++;
+
+    if(r.createdAt && r.createdAt > map[key].last){
+      map[key].last = r.createdAt;
+      map[key].name = r.clientName || map[key].name;
+      map[key].phone = r.clientPhone || map[key].phone;
+    }
+  });
+
+  const clients = Object.values(map).sort((a,b)=>b.count-a.count);
+
+  table.innerHTML = "";
+
+  if(!clients.length){
+    table.innerHTML = '<tr><td colspan="7">No hay clientes todavía.</td></tr>';
+    return;
+  }
+
+  clients.forEach(c=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${c.name}</td>
+      <td>${c.phone}</td>
+      <td>${c.count}</td>
+      <td>${c.count >= 3 ? "⭐ VIP" : "Normal"}</td>
+      
+
+<td>
+  <input 
+    placeholder="Notas..."
+    value="${c.notes || ""}"
+    onchange="saveClientNote('${c.phone}', this.value)"
+  >
+</td>
+
+<td>${c.last ? new Date(c.last).toLocaleString() : "-"}</td>
+<td>
+  <button class="btn small danger" onclick="blockClient('${c.phone}')">
+    Bloquear
+  </button>
+</td>
+    `;
+    table.appendChild(tr);
+  });
+}
+
+setInterval(()=>{
+  try{ renderFrequentClients(); }catch(e){}
+}, 3000);
+
+function setupReservationSearch(){
+  const input = document.getElementById("reservationSearchInput");
+  const table = document.getElementById("reservationsTable");
+
+  if(!input || !table || input.dataset.ready === "1") return;
+
+  input.dataset.ready = "1";
+
+  input.addEventListener("input", ()=>{
+    const q = input.value.toLowerCase().trim();
+
+    table.querySelectorAll("tr").forEach(row=>{
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(q) ? "" : "none";
+    });
+  });
+}
+
+setInterval(()=>{
+  try{ setupReservationSearch(); }catch(e){}
+}, 1000);
+
+let lastReservationCount = null;
+
+function checkNewReservationsSound(){
+  const u = currentUser && currentUser();
+  if(!u) return;
+
+  const total = (u.reservations || []).length;
+
+  if(lastReservationCount === null){
+  lastReservationCount = total;
+  return;
+}
+
+  if(total > lastReservationCount){
+    const audio = document.getElementById("reservationSound");
+
+    if(audio){
+      audio.play().catch(()=>{});
+    }
+  }
+
+  lastReservationCount = total;
+}
+
+setInterval(()=>{
+  try{
+    checkNewReservationsSound();
+  }catch(e){}
+}, 3000);
+
+function saveClientNote(phone, note){
+  const u = currentUser && currentUser();
+  if(!u) return;
+
+  if(!u.clientNotes){
+    u.clientNotes = {};
+  }
+
+  u.clientNotes[phone] = note;
+
+  saveDB();
+
+  try{
+    backendSaveCurrentBusiness();
+  }catch(e){}
+}
+
+function renderTodayAppointments(){
+  const u = currentUser && currentUser();
+  if(!u) return;
+
+  const today = new Date().toISOString().slice(0,10);
+
+  const todayReservations = (u.reservations || []).filter(r=>{
+    const slot = (u.slots || []).find(s=>s.id === r.slotId);
+    return slot && slot.date === today;
+  });
+
+  const set = (id,value)=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = value;
+  };
+
+  set("todayTotal", todayReservations.length);
+  set("todayPending", todayReservations.filter(r=>r.status==="Pendiente").length);
+  set("todayConfirmed", todayReservations.filter(r=>r.status==="Confirmada").length);
+  set("todayCompleted", todayReservations.filter(r=>r.status==="Completada").length);
+}
+
+setInterval(()=>{
+  try{ renderTodayAppointments(); }catch(e){}
+},3000);
+
+function blockClient(phone){
+  const u = currentUser && currentUser();
+  if(!u) return;
+
+  if(!confirm("¿Bloquear este cliente? No podrá hacer reservas con este teléfono.")) return;
+
+  u.blockedClients = u.blockedClients || [];
+  if(!u.blockedClients.includes(phone)){
+    u.blockedClients.push(phone);
+  }
+
+  saveDB();
+
+  try{
+    backendSaveCurrentBusiness();
+  }catch(e){}
+
+  alert("Cliente bloqueado.");
+}
+
+function renderAppointmentReminders(){
+  const u = currentUser && currentUser();
+  const box = document.getElementById("appointmentRemindersBox");
+
+  if(!u || !box) return;
+
+  const now = new Date();
+
+  const upcoming = (u.reservations || []).filter(r=>{
+    if(r.status === "Cancelada" || r.status === "Completada") return false;
+
+    const slot = (u.slots || []).find(s=>s.id === r.slotId);
+    if(!slot || !slot.date || !slot.time) return false;
+
+    const dt = new Date(slot.date + "T" + slot.time);
+    return dt > now;
+  });
+
+  upcoming.sort((a,b)=>{
+    const sa = (u.slots || []).find(s=>s.id === a.slotId);
+    const sb = (u.slots || []).find(s=>s.id === b.slotId);
+    return new Date(sa.date + "T" + sa.time) - new Date(sb.date + "T" + sb.time);
+  });
+
+  box.innerHTML = "";
+
+  if(!upcoming.length){
+    box.innerHTML = '<p class="hint">No hay citas próximas para recordar.</p>';
+    return;
+  }
+
+  upcoming.slice(0,10).forEach(r=>{
+    const slot = (u.slots || []).find(s=>s.id === r.slotId);
+    const businessName = u.businessName || u.name || "el negocio";
+    const clientName = r.clientName || "cliente";
+    const serviceName = r.serviceName || "servicio";
+    const date = slot ? slot.date : "";
+    const time = slot ? slot.time : "";
+
+    const message = `Hola ${clientName} 👋
+
+Te recordamos que tienes una cita en ${businessName} para ${serviceName} el ${date} a las ${time}.
+
+¡Te esperamos!`;
+
+    const phone = String(r.clientPhone || "").replace(/[^\d]/g,"");
+    const email = String(r.clientEmail || "").trim();
+
+    const waLink = phone
+      ? "https://wa.me/" + phone + "?text=" + encodeURIComponent(message)
+      : "javascript:void(0)";
+
+    const mailLink = email
+  ? "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(email) + "&su=" + encodeURIComponent("Recordatorio de cita") + "&body=" + encodeURIComponent(message)
+  : "javascript:void(0)";
+
+    const div = document.createElement("div");
+    div.className = "reminder-card";
+    div.innerHTML = `
+      <strong>${clientName}</strong> - ${serviceName}<br>
+      <span>${date} ${time}</span><br><br>
+      <a class="btn small" target="_blank" href="${waLink}">Recordar WhatsApp</a>
+      <a class="btn small" target="_blank" href="${mailLink}">Recordar correo</a>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+setInterval(()=>{
+  try{ renderAppointmentReminders(); }catch(e){}
+},3000);
+
+let premiumCalendarDate = new Date();
+let selectedPremiumCalendarDate = "";
+
+function renderPremiumCalendar(){
+  const u = currentUser && currentUser();
+  const grid = document.getElementById("premiumCalendarGrid");
+  const title = document.getElementById("premiumCalendarTitle");
+  const details = document.getElementById("premiumCalendarDetails");
+
+  if(!u || !grid || !title) return;
+
+  const year = premiumCalendarDate.getFullYear();
+  const month = premiumCalendarDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startWeekDay = firstDay.getDay();
+
+  title.textContent = firstDay.toLocaleDateString("es-DO", {
+    month: "long",
+    year: "numeric"
+  });
+
+  grid.innerHTML = "";
+
+  const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+  weekDays.forEach(d=>{
+    const div = document.createElement("div");
+    div.className = "premium-calendar-weekday";
+    div.textContent = d;
+    grid.appendChild(div);
+  });
+
+  for(let i=0;i<startWeekDay;i++){
+    const empty = document.createElement("div");
+    empty.className = "premium-calendar-day empty";
+    grid.appendChild(empty);
+  }
+
+  for(let day=1; day<=lastDay.getDate(); day++){
+    const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+
+    const dayReservations = (u.reservations || []).filter(r=>{
+      const slot = (u.slots || []).find(s=>s.id === r.slotId);
+      return slot && slot.date === dateStr;
+    });
+
+    const div = document.createElement("div");
+    div.className = "premium-calendar-day";
+
+    const today = new Date().toISOString().slice(0,10);
+    if(dateStr === today){
+      div.classList.add("today");
+    }
+    if(dateStr === selectedPremiumCalendarDate){
+  div.classList.add("selected-day");
+}
+
+    div.innerHTML = `
+      <strong>${day}</strong>
+      <small>${dayReservations.length} cita${dayReservations.length === 1 ? "" : "s"}</small>
+      <div class="calendar-dots">
+        ${dayReservations.map(r=>{
+          let cls = "dot-pending";
+          if(r.status === "Confirmada") cls = "dot-confirmed";
+          if(r.status === "Completada") cls = "dot-completed";
+          if(r.status === "Cancelada") cls = "dot-cancelled";
+          return `<span class="${cls}"></span>`;
+        }).join("")}
+      </div>
+    `;
+
+    div.onclick = ()=>{
+    selectedPremiumCalendarDate = dateStr;
+renderPremiumCalendar();
+      
+      if(!details) return;
+
+      if(!dayReservations.length){
+        details.innerHTML = `<h3>${dateStr}</h3><p class="hint">No hay citas para este día.</p>`;
+        return;
+      }
+
+      details.innerHTML = `
+        <h3>Citas del ${dateStr}</h3>
+        ${dayReservations.map(r=>{
+          const slot = (u.slots || []).find(s=>s.id === r.slotId);
+          return `
+            <div class="premium-calendar-appointment">
+              <strong>${slot ? slot.time : ""}</strong> - ${r.clientName || "Cliente"}<br>
+              <span>${r.serviceName || "Servicio"} · ${r.status || "Pendiente"}</span><br>
+<small>Atiende: ${r.staff || "Sin asignar"}</small>
+            </div>
+          `;
+        }).join("")}
+      `;
+    };
+
+    grid.appendChild(div);
+  }
+}
+
+function setupPremiumCalendar(){
+  const prev = document.getElementById("prevCalendarMonth");
+  const next = document.getElementById("nextCalendarMonth");
+
+  if(prev && prev.dataset.ready !== "1"){
+    prev.dataset.ready = "1";
+    prev.onclick = ()=>{
+      premiumCalendarDate.setMonth(premiumCalendarDate.getMonth() - 1);
+      renderPremiumCalendar();
+    };
+  }
+
+  if(next && next.dataset.ready !== "1"){
+    next.dataset.ready = "1";
+    next.onclick = ()=>{
+      premiumCalendarDate.setMonth(premiumCalendarDate.getMonth() + 1);
+      renderPremiumCalendar();
+    };
+  }
+
+  renderPremiumCalendar();
+}
+
+setTimeout(()=>{
+  try{
+    setupPremiumCalendar();
+  }catch(e){}
+},500);
+
+function renderClientProfile(){
+  const u = currentUser && currentUser();
+  const select = document.getElementById("clientProfileSelect");
+  const box = document.getElementById("clientProfileBox");
+
+  if(!u || !select || !box) return;
+
+  const map = {};
+
+  (u.reservations || []).forEach(r=>{
+    const key = (r.clientPhone || r.clientName || "").trim();
+    if(!key) return;
+
+    if(!map[key]){
+      map[key] = {
+        name: r.clientName || "-",
+        phone: r.clientPhone || "-",
+        email: r.clientEmail || "-",
+        count: 0,
+        last: r.createdAt || "",
+        notes: (u.clientNotes && u.clientNotes[r.clientPhone]) || "",
+        completed: 0,
+        cancelled: 0,
+        pending: 0,
+        confirmed: 0
+      };
+    }
+
+    map[key].count++;
+
+    if(r.status === "Completada") map[key].completed++;
+    if(r.status === "Cancelada") map[key].cancelled++;
+    if(r.status === "Pendiente") map[key].pending++;
+    if(r.status === "Confirmada") map[key].confirmed++;
+
+    if(r.createdAt && r.createdAt > map[key].last){
+      map[key].last = r.createdAt;
+      map[key].name = r.clientName || map[key].name;
+      map[key].phone = r.clientPhone || map[key].phone;
+      map[key].email = r.clientEmail || map[key].email;
+    }
+  });
+
+  const clients = Object.values(map).sort((a,b)=>b.count-a.count);
+
+  const currentValue = select.value;
+
+  select.innerHTML = '<option value="">Seleccionar cliente</option>';
+
+  clients.forEach(c=>{
+    const option = document.createElement("option");
+    option.value = c.phone;
+    option.textContent = `${c.name} - ${c.phone}`;
+    select.appendChild(option);
+  });
+
+  if(currentValue){
+    select.value = currentValue;
+  }
+
+  const selected = clients.find(c=>c.phone === select.value);
+
+  if(!selected){
+    box.innerHTML = "Selecciona un cliente para ver su perfil.";
+    return;
+  }
+
+  box.innerHTML = `
+    <h3>${selected.name}</h3>
+    <p><strong>Teléfono:</strong> ${selected.phone}</p>
+    <p><strong>Correo:</strong> ${selected.email}</p>
+    <p><strong>Total reservas:</strong> ${selected.count}</p>
+    <p><strong>Estado:</strong> ${selected.count >= 3 ? "⭐ VIP" : "Normal"}</p>
+    <p><strong>Pendientes:</strong> ${selected.pending}</p>
+    <p><strong>Confirmadas:</strong> ${selected.confirmed}</p>
+    <p><strong>Completadas:</strong> ${selected.completed}</p>
+    <p><strong>Canceladas:</strong> ${selected.cancelled}</p>
+    <p><strong>Última reserva:</strong> ${selected.last ? new Date(selected.last).toLocaleString() : "-"}</p>
+    <p><strong>Notas:</strong> ${selected.notes || "Sin notas"}</p>
+  `;
+}
+
+setInterval(()=>{
+  try{ renderClientProfile(); }catch(e){}
+},3000);
+
+function renderStaff(){
+  const u = currentUser && currentUser();
+  const table = document.getElementById("staffTable");
+
+  if(!u || !table) return;
+
+  u.staff = u.staff || [];
+
+  table.innerHTML = "";
+
+  if(!u.staff.length){
+    table.innerHTML = '<tr><td colspan="4">No hay trabajadores agregados.</td></tr>';
+    return;
+  }
+
+  u.staff.forEach((s,index)=>{
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${s.name}</td>
+      <td>${s.email || "-"}</td>
+      <td>${s.role}</td>
+      <td>
+        <button class="btn small danger" onclick="deleteStaff(${index})">Eliminar</button>
+      </td>
+    `;
+
+    table.appendChild(tr);
+  });
+}
+
+function setupStaff(){
+  const btn = document.getElementById("addStaffBtn");
+  const nameInput = document.getElementById("staffNameInput");
+  const roleInput = document.getElementById("staffRoleInput");
+  const emailInput = document.getElementById("staffEmailInput");
+  const passwordInput = document.getElementById("staffPasswordInput");
+
+  if(!btn || !nameInput || !roleInput || !emailInput || !passwordInput || btn.dataset.ready === "1") return;
+
+  btn.dataset.ready = "1";
+
+  btn.onclick = async ()=>{
+    const u = currentUser && currentUser();
+    if(!u) return;
+
+    const name = nameInput.value.trim();
+    const role = roleInput.value || "Staff";
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value.trim();
+
+    if(!name){
+      alert("Escribe el nombre del trabajador.");
+      return;
+    }
+
+    if(!email || !password){
+      alert("Escribe correo y contraseña del trabajador.");
+      return;
+    }
+
+    u.staff = Array.isArray(u.staff) ? u.staff : [];
+
+    const duplicated = u.staff.some(s => String(s.email || "").trim().toLowerCase() === email);
+    if(duplicated){
+      alert("Ya existe un trabajador con ese correo.");
+      return;
+    }
+
+    u.staff.push({
+      id: uid(),
+      name,
+      email,
+      password,
+      role,
+      createdAt: new Date().toISOString()
+    });
+
+    saveDB();
+
+    const savedOnline = await backendSaveCurrentBusiness();
+
+    localStorage.setItem("reservapro_staff_login_cache", JSON.stringify((db.users || []).map(user=>({
+      businessId: user.id,
+      businessName: user.businessName,
+      slug: user.slug,
+      staff: user.staff || []
+    }))));
+
+    nameInput.value = "";
+    emailInput.value = "";
+    passwordInput.value = "";
+
+    renderStaff();
+
+    if(savedOnline){
+      alert("Trabajador agregado.");
+    }else{
+      alert("Trabajador agregado localmente, pero no se pudo guardar online. Revisa que el backend esté activo.");
+    }
+  };
+}
+
+function deleteStaff(index){
+  const u = currentUser && currentUser();
+  if(!u || !u.staff) return;
+
+  if(!confirm("¿Eliminar este trabajador?")) return;
+
+  u.staff.splice(index,1);
+
+  saveDB();
+
+  try{
+    backendSaveCurrentBusiness();
+  }catch(e){}
+
+  renderStaff();
+}
+
+setInterval(()=>{
+  try{
+    setupStaff();
+    renderStaff();
+  }catch(e){}
+},1000);
+
+function setupStaffFilter(){
+  const u = currentUser && currentUser();
+  const select = document.getElementById("staffFilter");
+  const table = document.getElementById("reservationsTable");
+
+  if(!u || !select || !table) return;
+
+  const currentValue = select.value;
+
+  select.innerHTML = '<option value="">Todos los trabajadores</option>';
+
+  (u.staff || []).forEach(s=>{
+    const option = document.createElement("option");
+    option.value = s.name;
+    option.textContent = s.name;
+    select.appendChild(option);
+  });
+
+  select.value = currentValue;
+
+  table.querySelectorAll("tr").forEach(row=>{
+    const selected = select.value;
+
+    if(!selected){
+      row.style.display = "";
+      return;
+    }
+
+    row.style.display = row.textContent.includes(selected) ? "" : "none";
+  });
+}
+
+setInterval(()=>{
+  try{ setupStaffFilter(); }catch(e){}
+},1000);
+
+function setupStaffFilter(){
+  const select = document.getElementById("staffFilter");
+  const table = document.getElementById("reservationsTable");
+  const u = currentUser && currentUser();
+
+  if(!select || !table || !u) return;
+
+  const selected = select.value;
+
+  select.innerHTML = '<option value="">Todos los trabajadores</option>';
+
+  (u.staff || []).forEach(s=>{
+    const option = document.createElement("option");
+    option.value = s.name;
+    option.textContent = s.name;
+    select.appendChild(option);
+  });
+
+  select.value = selected;
+
+  table.querySelectorAll("tr").forEach(row=>{
+    const staffSelect = row.querySelector(".reservationStaff");
+
+    if(!selected){
+      row.style.display = "";
+      return;
+    }
+
+    if(staffSelect && staffSelect.value === selected){
+      row.style.display = "";
+    }else{
+      row.style.display = "none";
+    }
+  });
+}
+
+setInterval(()=>{
+  try{
+    setupStaffFilter();
+  }catch(e){}
+},1000);
+
+function renderStaffStats(){
+  const box = document.getElementById("staffStatsTable");
+  const u = currentUser && currentUser();
+
+  if(!box || !u) return;
+
+  box.innerHTML = "";
+
+  (u.staff || []).forEach(staff => {
+
+    const reservations = (u.reservations || []).filter(r =>
+      r.staff === staff.name
+    );
+
+    const pending = reservations.filter(r => r.status === "Pendiente").length;
+    const confirmed = reservations.filter(r => r.status === "Confirmada").length;
+    const completed = reservations.filter(r => r.status === "Completada").length;
+    const cancelled = reservations.filter(r => r.status === "Cancelada").length;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${staff.name}</td>
+      <td>${reservations.length}</td>
+      <td>${pending}</td>
+      <td>${confirmed}</td>
+      <td>${completed}</td>
+      <td>${cancelled}</td>
+    `;
+
+    box.appendChild(tr);
+  });
+}
+
+setInterval(()=>{
+  try{
+    renderStaffStats();
+  }catch(e){}
+},1000);
+
+function applyRolePermissions(){
+  const select = document.getElementById("currentRoleSelect");
+  if(!select) return;
+
+  const savedRole = localStorage.getItem("currentRole") || "Admin";
+
+  if(!select.dataset.ready){
+    select.value = savedRole;
+    select.dataset.ready = "1";
+
+    select.onchange = ()=>{
+      localStorage.setItem("currentRole", select.value);
+      applyRolePermissions();
+    };
+  }
+
+  const role = select.value || "Admin";
+
+  document.querySelectorAll(".panel").forEach(panel=>{
+    panel.style.display = "";
+  });
+
+ if(role === "Staff"){
+  // NO ocultamos "Staff / Trabajadores" para no esconder Modo de acceso
+  hidePanelByTitle("Estadísticas por trabajador");
+  hidePanelByTitle("Backend / Guardado online");
+  hidePanelByTitle("Respaldo de datos");
+}
+
+  if(role === "Recepción"){
+    hidePanelByTitle("Backend / Guardado online");
+    hidePanelByTitle("Respaldo de datos");
+    hidePanelByTitle("Estadísticas por trabajador");
+  }
+}
+
+function hidePanelByTitle(title){
+  document.querySelectorAll(".panel").forEach(panel=>{
+    const h2 = panel.querySelector("h2");
+    if(h2 && h2.textContent.trim() === title){
+      panel.style.display = "none";
+    }
+  });
+}
+
+setTimeout(()=>{
+  try{
+    applyRolePermissions();
+  }catch(e){}
+},1000);
+
+function setupStaffLogin(){
+  const btn = document.getElementById("staffLoginBtn");
+  const emailInput = document.getElementById("staffLoginEmail");
+  const passInput = document.getElementById("staffLoginPassword");
+
+  if(!btn || !emailInput || !passInput || btn.dataset.ready === "1") return;
+
+  btn.dataset.ready = "1";
+
+  btn.onclick = async ()=>{
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passInput.value.trim();
+
+    if(!email || !password){
+      alert("Escribe correo y contraseña.");
+      return;
+    }
+
+    try{
+      const result = await apiRequest("/api/staff-login",{
+        method:"POST",
+        body:JSON.stringify({ email, password })
+      });
+
+      if(result && result.business && result.staff){
+        const business = upsertLocalBusinessFromBackend(result.business);
+
+        localStorage.setItem("staffSession",JSON.stringify({
+          businessId: business.id,
+          staffId: result.staff.id || "",
+          name: result.staff.name,
+          email: result.staff.email,
+          role: result.staff.role || "Staff"
+        }));
+
+        localStorage.setItem("currentRole", result.staff.role || "Staff");
+
+        alert("Bienvenido " + result.staff.name);
+        loadDashboard();
+        return;
+      }
+    }catch(e){
+      console.warn("STAFF_BACKEND_LOGIN_FAILED", e);
+    }
+
+    let foundBusiness = null;
+    let foundStaff = null;
+
+    let usersToSearch = db.users || [];
+
+    if(!usersToSearch.length){
+      try{
+        const cache = JSON.parse(localStorage.getItem("reservapro_staff_login_cache") || "[]");
+        usersToSearch = cache.map(x=>({
+          id: x.businessId,
+          businessName: x.businessName,
+          slug: x.slug,
+          staff: x.staff || []
+        }));
+      }catch(e){}
+    }
+
+    usersToSearch.forEach(u=>{
+      (u.staff || []).forEach(s=>{
+        if(
+          String(s.email || "").trim().toLowerCase() === email &&
+          String(s.password || s.pass || "").trim() === password
+        ){
+          foundBusiness = u;
+          foundStaff = s;
+        }
+      });
+    });
+
+    if(!foundBusiness || !foundStaff){
+      alert("Empleado no encontrado o contraseña incorrecta.");
+      return;
+    }
+
+    db.currentUserId = foundBusiness.id;
+
+    localStorage.setItem("staffSession", JSON.stringify({
+      businessId: foundBusiness.id,
+      staffId: foundStaff.id || "",
+      name: foundStaff.name,
+      email: foundStaff.email,
+      role: foundStaff.role || "Staff"
+    }));
+
+    localStorage.setItem("currentRole", foundStaff.role || "Staff");
+
+    saveDB();
+    alert("Bienvenido " + foundStaff.name);
+    loadDashboard();
+  };
+}
+
+function getStaffSession(){
+  try{
+    return JSON.parse(localStorage.getItem("staffSession") || "null");
+  }catch(e){
+    return null;
+  }
+}
+
+function applyStaffRealView(){
+return;
+}
+
+setInterval(()=>{
+  try{
+    setupStaffLogin();
+    applyStaffRealView();
+  }catch(e){}
+},1000);
+
+function logoutStaffSession(){
+  localStorage.removeItem("staffSession");
+  localStorage.setItem("currentRole","Admin");
+  location.reload();
+}
+
+function devLocalAccess(){
+  const params = new URLSearchParams(location.search);
+
+  if(params.get("dev") !== "1") return;
+  if(!db.users || !db.users.length) return;
+
+  db.currentUserId = db.users[0].id;
+  localStorage.setItem("currentRole","Admin");
+  localStorage.removeItem("staffSession");
+  saveDB();
+
+  try{ show("dashboardView"); }catch(e){}
+  try{ show("dashboard"); }catch(e){}
+
+  try{ renderAll && renderAll(); }catch(e){}
+  try{ renderReservations && renderReservations(); }catch(e){}
+  try{ renderPremiumCalendar && renderPremiumCalendar(); }catch(e){}
+}
+
+devLocalAccess();
+
+function enforceRealStaffSession(){
+  const session = getStaffSession && getStaffSession();
+  if(!session) return;
+
+  const roleSelect = document.getElementById("currentRoleSelect");
+
+  if(roleSelect){
+    roleSelect.value = session.role;
+    roleSelect.disabled = true;
+  }
+
+  localStorage.setItem("currentRole", session.role);
+
+  if(session.role === "Staff"){
+    const filter = document.getElementById("staffFilter");
+    if(filter){
+      filter.value = session.name;
+      filter.disabled = true;
+    }
+
+    document.querySelectorAll(".reservationStaff").forEach(sel=>{
+      const row = sel.closest("tr");
+
+    
+
+      sel.disabled = true;
+    });
+  }
+}
+
+setTimeout(()=>{
+  try{
+    enforceRealStaffSession();
+  }catch(e){}
+},1000);
+
+function applyRoleButtonPermissions(){
+  const session = getStaffSession && getStaffSession();
+  const role = session ? session.role : (localStorage.getItem("currentRole") || "Admin");
+
+  document.querySelectorAll('[data-a="cancel"]').forEach(btn=>{
+  btn.style.display = "";
+});
+
+  document.querySelectorAll('[data-a="reschedule"]').forEach(btn=>{
+  if(role === "Staff"){
+    btn.style.visibility = "hidden";
+    btn.disabled = true;
+  }else{
+    btn.style.visibility = "";
+    btn.disabled = false;
+  }
+});
+
+  document.querySelectorAll(".reservationStaff").forEach(sel=>{
+    if(role === "Staff"){
+      sel.disabled = true;
+    }
+  });
+}
+
+
+function applyReceptionPermissions(){
+  const session = getStaffSession && getStaffSession();
+  const role = session ? session.role : (localStorage.getItem("currentRole") || "Admin");
+
+  if(role !== "Recepción") return;
+
+  hidePanelByTitle("Staff / Trabajadores");
+  hidePanelByTitle("Estadísticas por trabajador");
+  hidePanelByTitle("Backend / Guardado online");
+  hidePanelByTitle("Respaldo de datos");
+
+}
+
+setTimeout(()=>{
+  try{
+    applyReceptionPermissions();
+  }catch(e){}
+},1000);
+
+function hideStaffForbiddenPanels(){
+  const session = getStaffSession && getStaffSession();
+  const role = session ? session.role : (localStorage.getItem("currentRole") || "Admin");
+
+  if(role !== "Staff") return;
+
+  const blockedTitles = [
+    "Perfil profesional",
+    "Perfil del negocio",
+    "Servicios disponibles",
+    "Horarios disponibles",
+    "Estadísticas",
+    "Clientes frecuentes",
+    "Perfil del cliente",
+    "Staff / Trabajadores",
+    "Estadísticas por trabajador",
+    "Backend / Guardado online",
+    "Respaldo de datos"
+  ];
+
+  blockedTitles.forEach(title=>{
+    hidePanelByTitle(title);
+  });
+}
+
+setTimeout(()=>{
+  try{
+    hideStaffForbiddenPanels();
+  }catch(e){}
+},1000);
+
+function applyReceptionRealView(){
+  const session = getStaffSession && getStaffSession();
+  const role = session ? session.role : (localStorage.getItem("currentRole") || "Admin");
+
+  if(role !== "Recepción") return;
+
+  const blockedTitles = [
+    "Staff / Trabajadores",
+    "Estadísticas por trabajador",
+    "Backend / Guardado online",
+    "Respaldo de datos"
+  ];
+
+  blockedTitles.forEach(title=>{
+    try{
+      hidePanelByTitle(title);
+    }catch(e){}
+  });
+}
+
+setTimeout(()=>{
+  try{
+    applyReceptionRealView();
+  }catch(e){}
+},1000);
+
+function enforceFinalRolePanels(){
+  const session = getStaffSession && getStaffSession();
+  const role = session ? session.role : (localStorage.getItem("currentRole") || "Admin");
+
+  if(role === "Admin") return;
+
+  const hiddenForStaffAndReception = [
+    "Perfil profesional",
+    "Link público",
+    "Backend / Guardado online",
+    "Respaldo de datos"
+  ];
+
+  if(role === "Staff"){
+    hiddenForStaffAndReception.push(
+      "Servicios disponibles",
+      "Horarios disponibles",
+      "Estadísticas",
+      "Clientes frecuentes",
+      "Perfil del cliente",
+      "Staff / Trabajadores",
+      "Estadísticas por trabajador"
+    );
+  }
+
+  if(role === "Recepción"){
+    hiddenForStaffAndReception.push(
+      "Staff / Trabajadores",
+      "Estadísticas por trabajador"
+    );
+  }
+
+  hiddenForStaffAndReception.forEach(title=>{
+    try{ hidePanelByTitle(title); }catch(e){}
+  });
+}
+
+setTimeout(()=>{
+  try{ enforceFinalRolePanels(); }catch(e){}
+},1000);
+
+function addStaffLogoutButton(){
+  const session = getStaffSession && getStaffSession();
+  if(!session) return;
+
+  const header = document.querySelector("header") || document.querySelector(".topbar") || document.body;
+
+  if(document.getElementById("staffLogoutBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "staffLogoutBtn";
+  btn.className = "btn small";
+  btn.textContent = "Cerrar sesión empleado";
+
+  btn.onclick = ()=>{
+    localStorage.removeItem("staffSession");
+    localStorage.setItem("currentRole","Admin");
+    location.reload();
+  };
+
+  header.appendChild(btn);
+}
+
+setTimeout(()=>{
+  try{
+    addStaffLogoutButton();
+  }catch(e){}
+},1000);
+
+function renderClientStaffOptions(){
+  const select = document.getElementById("clientStaff");
+  const label = document.getElementById("clientStaffLabel");
+
+  if(!select || !label) return;
+
+  const u = publicBusinessId
+    ? db.users.find(x=>x.id === publicBusinessId)
+    : currentUser && currentUser();
+
+  if(!u || !Array.isArray(u.staff) || !u.staff.length){
+    select.classList.add("hidden");
+    label.classList.add("hidden");
+    select.innerHTML = "";
+    return;
+  }
+
+  label.classList.remove("hidden");
+  select.classList.remove("hidden");
+
+  const current = select.value;
+
+  select.innerHTML = '<option value="">Sin preferencia</option>';
+
+  u.staff.forEach(s=>{
+    const option = document.createElement("option");
+    option.value = s.name;
+    option.textContent = s.name;
+    select.appendChild(option);
+  });
+
+  select.value = current;
+}
+
+setInterval(()=>{
+  try{
+    renderClientStaffOptions();
+  }catch(e){}
+},1000);
+
+
+
+/* =========================================================
+   RESERVAPRO - NAVEGACIÓN CLÁSICA POR PANELES
+   Seguro: no cambia IDs, no reemplaza botones, no toca lógica.
+   Solo organiza visualmente para que no sea una sola página eterna.
+   ========================================================= */
+(function(){
+  function hasAny(section, selectors){
+    return selectors.some(sel => section.querySelector(sel));
+  }
+
+  function panelGroups(section){
+    const groups = [];
+    if(hasAny(section, ['#businessName','#publicLink','#businessSlug'])) groups.push('negocio');
+    if(hasAny(section, ['#servicesTable','#slotsTable','#serviceName','#slotDate'])) groups.push('servicios');
+    if(hasAny(section, ['#premiumCalendarGrid','#calendarVisual'])) groups.push('inicio','calendario');
+    if(hasAny(section, ['#statTotal','#todayTotal'])) groups.push('inicio','resumen');
+    if(hasAny(section, ['#reservationsTable'])) groups.push('inicio','reservas');
+    if(hasAny(section, ['#historyTable'])) groups.push('reservas','historial');
+    if(hasAny(section, ['#clientProfileSelect','#frequentClientsTable'])) groups.push('clientes');
+    if(hasAny(section, ['#staffTable','#staffStatsTable','#currentRoleSelect'])) groups.push('staff');
+    if(hasAny(section, ['#appointmentRemindersBox'])) groups.push('recordatorios');
+    if(hasAny(section, ['#syncBackendBtn','#backupDownloadBtn'])) groups.push('sistema');
+    if(!groups.length) groups.push('otros');
+    return Array.from(new Set(groups));
+  }
+
+  function titleFor(group){
+    const map = {
+      inicio:['Dashboard','Calendario, reservas activas y resumen rápido.'],
+      calendario:['Calendario','Vista principal de tus citas.'],
+      reservas:['Reservas','Solicitudes, acciones, WhatsApp, correo e historial.'],
+      negocio:['Negocio','Perfil profesional y link público.'],
+      servicios:['Servicios y horarios','Servicios disponibles y horarios de atención.'],
+      clientes:['Clientes','Clientes frecuentes, notas y bloqueo.'],
+      staff:['Staff','Trabajadores, roles y estadísticas por trabajador.'],
+      recordatorios:['Recordatorios','Avisos por WhatsApp y correo.'],
+      sistema:['Sistema','Backend, guardado online y respaldo.'],
+      todo:['Todo','Todas las secciones visibles.']
+    };
+    return map[group] || ['Dashboard',''];
+  }
+
+  function buildClassicDashboard(){
+    const dashboard = document.getElementById('dashboardView');
+    if(!dashboard || dashboard.dataset.rpClassicReady === '1') return;
+
+    const grid = dashboard.querySelector('.grid, .rp-dashboard-grid');
+    if(!grid) return;
+
+    dashboard.dataset.rpClassicReady = '1';
+
+    const shell = document.createElement('div');
+    shell.className = 'rp-classic-shell';
+
+    const sidebar = document.createElement('aside');
+    sidebar.className = 'rp-classic-sidebar';
+    sidebar.innerHTML = `
+      <div class="rp-brand-box">
+        <strong>ReservaPro</strong>
+        <span>Panel de reservas</span>
+      </div>
+      <nav></nav>
+    `;
+
+    const main = document.createElement('div');
+    main.className = 'rp-classic-main';
+    const header = document.createElement('div');
+    header.className = 'rp-classic-header';
+    header.innerHTML = `<div><h2 id="rpClassicTitle">Dashboard</h2><p id="rpClassicSub">Calendario, reservas activas y resumen rápido.</p></div><span class="rp-classic-badge">Diseño clásico</span>`;
+
+    dashboard.insertBefore(shell, grid);
+    shell.appendChild(sidebar);
+    shell.appendChild(main);
+    main.appendChild(header);
+    main.appendChild(grid);
+
+    const panels = Array.from(grid.children).filter(el => el.tagName && el.tagName.toLowerCase() === 'section');
+    panels.forEach(panel => {
+      panel.dataset.rpGroups = panelGroups(panel).join(' ');
+    });
+
+    const navItems = [
+      ['inicio','Inicio'],
+      ['calendario','Calendario'],
+      ['reservas','Reservas'],
+      ['negocio','Negocio'],
+      ['servicios','Servicios'],
+      ['clientes','Clientes'],
+      ['staff','Staff'],
+      ['recordatorios','Recordatorios'],
+      ['sistema','Sistema'],
+      ['todo','Ver todo']
+    ];
+
+    const nav = sidebar.querySelector('nav');
+    navItems.forEach(([key,label])=>{
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'rp-nav-btn';
+      btn.dataset.group = key;
+      btn.innerHTML = `<span>${label}</span>`;
+      btn.onclick = () => showGroup(key);
+      nav.appendChild(btn);
+    });
+
+    function showGroup(group){
+      const [title,sub] = titleFor(group);
+      const t = document.getElementById('rpClassicTitle');
+      const s = document.getElementById('rpClassicSub');
+      if(t) t.textContent = title;
+      if(s) s.textContent = sub;
+
+      panels.forEach(panel=>{
+        const groups = (panel.dataset.rpGroups || '').split(/\s+/);
+        const visible = group === 'todo' || groups.includes(group);
+        panel.classList.toggle('rp-panel-hidden', !visible);
+      });
+
+      nav.querySelectorAll('.rp-nav-btn').forEach(btn=>{
+        btn.classList.toggle('active', btn.dataset.group === group);
+      });
+
+      try{ renderPremiumCalendar && renderPremiumCalendar(); }catch(e){}
+      try{ renderReservations && renderReservations(); }catch(e){}
+    }
+
+    showGroup('inicio');
+  }
+
+  window.RP_buildClassicDashboard = buildClassicDashboard;
+
+  window.addEventListener('load', ()=>setTimeout(buildClassicDashboard, 700));
+  document.addEventListener('click', ()=>setTimeout(buildClassicDashboard, 200));
+})();
+
+function renderBusinessLogoPreview(){
+  const input=document.getElementById("businessLogo");
+  const box=document.getElementById("businessLogoPreview");
+
+  if(!input || !box) return;
+
+  const url=(input.value || "").trim();
+
+  if(!url){
+    box.innerHTML="";
+    return;
+  }
+
+  box.innerHTML=`
+    <img src="${url}"
+         style="width:120px;height:120px;object-fit:cover;border:1px solid #ccc;border-radius:10px;">
+  `;
+}
+
+const businessLogoFile=document.getElementById("businessLogoFile");
+
+if(businessLogoFile){
+  businessLogoFile.onchange=(e)=>{
+    const file=e.target.files[0];
+    if(!file) return;
+
+    const reader=new FileReader();
+
+    reader.onload=()=>{
+      document.getElementById("businessLogo").value=reader.result;
+      renderBusinessLogoPreview();
+    };
+
+    reader.readAsDataURL(file);
+  };
+}
+
+function renderWorkGalleryPreview(){
+  const u=currentUser && currentUser();
+  const box=document.getElementById("galleryPreview");
+  if(!u || !box) return;
+
+  u.workGallery = Array.isArray(u.workGallery) ? u.workGallery : [];
+  box.innerHTML="";
+
+  u.workGallery.forEach((img,index)=>{
+    const item=document.createElement("div");
+    item.className="gallery-item";
+    item.innerHTML=`
+      <img src="${img}">
+      <button class="btn small danger">Eliminar</button>
+    `;
+
+    item.querySelector("button").onclick=()=>{
+  u.workGallery.splice(index,1);
+  saveDB();
+  try{ backendSaveCurrentBusiness(); }catch(e){}
+  renderWorkGalleryPreview();
+};
+    box.appendChild(item);
+  });
+}
+
+const galleryFilesInput=document.getElementById("galleryFiles");
+
+if(galleryFilesInput){
+  galleryFilesInput.onchange=(e)=>{
+    const u=currentUser && currentUser();
+    if(!u) return;
+
+    u.workGallery = Array.isArray(u.workGallery) ? u.workGallery : [];
+
+    const files=Array.from(e.target.files || []).slice(0,6 - u.workGallery.length);
+
+    files.forEach(file=>{
+      const reader=new FileReader();
+
+      reader.onload=()=>{
+        if(u.workGallery.length < 6){
+          u.workGallery.push(reader.result);
+          saveDB();
+          try{ backendSaveCurrentBusiness(); }catch(e){}
+          renderWorkGalleryPreview();
+        }
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value="";
+  };
+}

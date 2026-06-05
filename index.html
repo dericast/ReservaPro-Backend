@@ -33,6 +33,19 @@
       <input id="loginPass" type="password">
       <button id="loginBtn" class="btn primary">Entrar</button>
     </div>
+    
+    <div class="panel">
+  <h2>Acceso empleados</h2>
+
+  <label>Correo del empleado</label>
+  <input id="staffLoginEmail" autocomplete="off">
+
+  <label>Contraseña del empleado</label>
+  <input id="staffLoginPassword" type="password" autocomplete="new-password">
+
+  <button id="staffLoginBtn" class="btn">Entrar como empleado</button>
+</div>
+     
 
     <div id="registerBox" class="hidden">
       <label>Nombre del negocio</label>
@@ -49,6 +62,18 @@
     <div class="grid">
       <section class="panel">
         <h2>Perfil profesional</h2>
+        <label>Foto / logo del negocio</label>
+<input id="businessLogoFile" type="file" accept="image/*">
+<input id="businessLogo" type="hidden">
+<p class="hint">Sube una foto desde tu computadora o celular.</p>
+<div id="businessLogoPreview" class="business-logo-preview"></div>
+<hr>
+
+<label>Galería de trabajos (máximo 6 imágenes)</label>
+
+<input id="galleryFiles" type="file" accept="image/*" multiple>
+
+<div id="galleryPreview" class="gallery-grid"></div>
         <label>Nombre del negocio</label>
         <input id="businessName">
         <label>Descripción</label>
@@ -113,32 +138,163 @@
 
 
       <section class="panel wide">
-        <h2>Galería / Portafolio</h2>
-
-        <label>Subir imagen desde archivo</label>
-        <input id="galleryFile" type="file" accept="image/*">
-        <p class="hint">Las imágenes se guardan en almacenamiento interno del navegador.</p>
-
-        <label>O agregar imagen por URL</label>
-        <input id="galleryUrl" placeholder="https://...">
-        <button id="addGalleryUrlBtn" class="btn">Agregar imagen por URL</button>
-
-        <p id="galleryStatus" class="hint"></p>
-        <h3>Imágenes agregadas</h3>
-        <div id="galleryManager" class="gallery-grid"></div>
-      </section>
-
-
-      <section class="panel wide">
         <h2>Calendario visual</h2>
         <p class="hint">Vista rápida de horarios disponibles y reservas activas.</p>
+        <div class="premium-calendar-head">
+  <button id="prevCalendarMonth" class="btn small">← Mes anterior</button>
+  <h3 id="premiumCalendarTitle">Calendario</h3>
+  <button id="nextCalendarMonth" class="btn small">Mes siguiente →</button>
+</div>
+
+<div class="calendar-legend">
+  <span>🟡 Pendiente</span>
+  <span>🟢 Confirmada</span>
+  <span>🔵 Completada</span>
+  <span>🔴 Cancelada</span>
+</div>
+
+<div id="premiumCalendarGrid"></div>
+<div id="premiumCalendarDetails" class="premium-calendar-details"></div>
         <div id="calendarVisual" class="calendar-visual"></div>
       </section>
 
       <section class="panel wide">
+  <h2>Estadísticas</h2>
+
+  <div class="stats-grid">
+    <div class="stat-card"><strong id="statTotal">0</strong><span>Total</span></div>
+    <div class="stat-card"><strong id="statPending">0</strong><span>Pendientes</span></div>
+    <div class="stat-card"><strong id="statConfirmed">0</strong><span>Confirmadas</span></div>
+    <div class="stat-card"><strong id="statCompleted">0</strong><span>Completadas</span></div>
+    <div class="stat-card"><strong id="statCancelled">0</strong><span>Canceladas</span></div>
+  </div>
+
+  <p><strong>Servicio más solicitado:</strong> <span id="statTopService">-</span></p>
+  <p><strong>Día con más reservas:</strong> <span id="statTopDay">-</span></p>
+</section>
+
+      <section class="panel wide">
+  <h2>Clientes frecuentes</h2>
+  <section class="panel wide">
+  <h2>Perfil del cliente</h2>
+  <label>Seleccionar cliente</label>
+  <select id="clientProfileSelect"></select>
+
+  <div id="clientProfileBox" class="client-profile-box">
+    Selecciona un cliente para ver su perfil.
+  </div>
+</section>
+  <p class="hint">Clientes que más han reservado.</p>
+  <section class="panel wide">
+  <h2>Staff / Trabajadores</h2>
+
+  <section class="panel wide">
+  <h2>Modo de acceso</h2>
+  <p class="hint">Selecciona el rol para probar permisos.</p>
+
+  <label>Rol actual</label>
+  <select id="currentRoleSelect">
+    <option value="Admin">Admin</option>
+    <option value="Staff">Staff</option>
+    <option value="Recepción">Recepción</option>
+  </select>
+</section>
+
+  <label>Nombre del trabajador</label>
+  <input id="staffNameInput" placeholder="Ej: Ana, Pedro, Dr. Luis">
+
+  <label>Correo / usuario del trabajador</label>
+<input id="staffEmailInput" placeholder="Ej: ana@gmail.com" autocomplete="off" name="staff_user_999">
+
+<label>Contraseña del trabajador</label>
+<input id="staffPasswordInput" type="text" placeholder="Contraseña del trabajador" autocomplete="new-password" name="staff_pass_999">
+
+  <label>Rol</label>
+  <select id="staffRoleInput">
+    <option value="Admin">Admin</option>
+    <option value="Staff">Staff</option>
+    <option value="Recepción">Recepción</option>
+  </select>
+
+  <button id="addStaffBtn" class="btn">Agregar trabajador</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Correo</th>
+        <th>Rol</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody id="staffTable"></tbody>
+  </table>
+</section>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <th>Teléfono</th>
+        <th>Reservas</th>
+        <th>Estado</th>
+        <th>Notas</th>
+        <th>Última reserva</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody id="frequentClientsTable"></tbody>
+  </table>
+</section>
+
+<section class="panel wide">
+  <h2>Estadísticas por trabajador</h2>
+  <p class="hint">Resumen de citas asignadas a cada trabajador.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Trabajador</th>
+        <th>Total</th>
+        <th>Pendientes</th>
+        <th>Confirmadas</th>
+        <th>Completadas</th>
+        <th>Canceladas</th>
+      </tr>
+    </thead>
+    <tbody id="staffStatsTable"></tbody>
+  </table>
+</section>
+
+
+<section class="panel wide">
+  <h2>Citas de hoy</h2>
+  <div class="today-summary">
+    <div><strong id="todayTotal">0</strong><span>Total hoy</span></div>
+    <div><strong id="todayPending">0</strong><span>Pendientes</span></div>
+    <div><strong id="todayConfirmed">0</strong><span>Confirmadas</span></div>
+    <div><strong id="todayCompleted">0</strong><span>Completadas</span></div>
+  </div>
+</section>
+
+<section class="panel wide">
+  <h2>Recordatorios de citas</h2>
+  <p class="hint">Citas próximas para recordar al cliente.</p>
+  <div id="appointmentRemindersBox"></div>
+</section>
+
+
+
+      <section class="panel wide">
         <h2>Reservas recibidas</h2>
+      <label>Buscar reserva</label>
+<input id="reservationSearchInput" placeholder="Buscar por cliente, teléfono o servicio">
+<label>Filtrar por trabajador</label>
+<select id="staffFilter">
+  <option value="">Todos los trabajadores</option>
+</select>
         <table>
-          <thead><tr><th>Cliente</th><th>Teléfono</th><th>Servicio</th><th>Horario</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Cliente</th><th>Teléfono</th><th>Servicio</th><th>Horario</th><th>Estado</th><th>Trabajador</th><th>Acciones</th></tr></thead>
           <tbody id="reservationsTable"></tbody>
         </table>
       </section>
@@ -147,7 +303,7 @@
 
       <section class="panel wide">
         <h2>Backend / Guardado online</h2>
-        <p class="hint">Esta versión guarda perfil, servicios y horarios también en el backend local.</p>
+        <p class="hint">Esta funcion guarda perfil, servicios y horarios.</p>
         <button id="syncBackendBtn" class="btn">Guardar ahora en backend</button>
         <p id="syncBackendStatus" class="hint"></p>
       </section>
@@ -177,6 +333,8 @@
   <section id="publicView" class="hidden">
     <div class="public-card">
       <button id="backBtn" class="btn small">Volver</button>
+      <div id="publicBusinessLogo" style="margin-bottom:12px;"></div>
+      <div id="publicWorkGallery" class="gallery-grid public-work-gallery"></div>
       <h2 id="pubName">ReservaPro</h2>
       <p id="pubDesc">Panel profesional de reservas.</p>
       <p id="pubLocation" class="muted"></p>
@@ -204,9 +362,19 @@
       <input id="clientEmail" type="email">
       <label>Servicio</label>
       <select id="clientService"></select>
-      <label>Horario disponible</label>
-      <select id="clientSlot"></select>
-      <button id="requestReservationBtn" class="btn primary">Solicitar reserva</button>
+<label id="clientStaffLabel" class="hidden">
+  ¿Con quién deseas atenderte?
+</label>
+<select id="clientStaff" class="hidden"></select>
+ <label>Horario disponible</label>
+
+
+      
+
+
+
+<select id="clientSlot"></select>
+      <button type="button" id="requestReservationBtn" class="btn primary">Solicitar reserva</button>
 
       <div id="requestResult" class="result hidden"></div>
 
@@ -221,3 +389,7 @@
 <script src="app.js"></script>
 </body>
 </html>
+
+<audio id="reservationSound" preload="auto">
+  <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+</audio>

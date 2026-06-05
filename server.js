@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
 
 const dbPath = path.join(__dirname, "reservapro.sqlite");
 const db = new sqlite3.Database(dbPath);
@@ -89,6 +89,8 @@ app.post("/api/register", (req, res) => {
     slots: [],
     reservations: [],
     gallery: [],
+    businessLogo: "",
+    workGallery: [],
     staff: []
   };
 
@@ -134,6 +136,57 @@ app.post("/api/login", (req, res) => {
       });
     }
   );
+});
+
+app.post("/api/staff-login", (req, res) => {
+  const { email, password } = req.body;
+
+  const loginEmail = String(email || "").trim().toLowerCase();
+  const loginPass = String(password || "").trim();
+
+  if(!loginEmail || !loginPass){
+    return res.status(400).json({ error: "Faltan datos." });
+  }
+
+  db.all(`SELECT * FROM businesses`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Error del servidor." });
+
+    for (const row of rows) {
+      let business;
+
+      try {
+        business = JSON.parse(row.data || "{}");
+      } catch (e) {
+        continue;
+      }
+
+      business.id = business.id || row.id;
+      business.email = business.email || row.email;
+      business.businessName = business.businessName || row.businessName;
+      business.slug = business.slug || row.slug;
+
+      const staff = Array.isArray(business.staff) ? business.staff : [];
+
+      const foundStaff = staff.find(s => {
+        const staffEmail = String(s.email || "").trim().toLowerCase();
+        const staffPass = String(s.password || s.pass || "").trim();
+
+        return staffEmail === loginEmail && staffPass === loginPass;
+      });
+
+      if (foundStaff) {
+        return res.json({
+          ok: true,
+          business,
+          staff: foundStaff
+        });
+      }
+    }
+
+    return res.status(401).json({
+      error: "Empleado no encontrado o contraseña incorrecta."
+    });
+  });
 });
 
 app.get("/api/business/:slug", (req, res) => {
