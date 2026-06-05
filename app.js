@@ -286,8 +286,18 @@ document.getElementById("copyPublicBtn").onclick=()=>{
   if(navigator.clipboard) navigator.clipboard.writeText(link);
   alert("Link copiado.");
 };
-document.getElementById("openPublicBtn").onclick=()=>{ const u=currentUser(); if(u) openPublic(u.slug); };
-document.getElementById("backBtn").onclick=()=> currentUser()?loadDashboard():show("authView");
+document.getElementById("openPublicBtn").onclick=()=>{
+  const u=currentUser();
+  if(!u) return;
+  const targetHash = "#/" + u.slug;
+  if(location.hash !== targetHash) location.hash = targetHash;
+  openPublic(u.slug);
+};
+document.getElementById("backBtn").onclick=()=>{
+  publicBusinessId = null;
+  history.replaceState(null, "", location.pathname + location.search);
+  currentUser()?loadDashboard():show("authView");
+};
 
 document.getElementById("addServiceBtn").onclick=()=>{
   const u=currentUser(); if(!u) return;
@@ -1382,6 +1392,9 @@ async function RP_refreshPublicReservationStatus(){
       localStorage.getItem("lastClientReservation_" + updated.id) ||
       localStorage.getItem(clientReservationKey(updated.id));
 
+    // Siempre refresca la vista pública para actualizar horarios libres/ocupados en todos los dispositivos.
+    await renderPublic(updated);
+
     const box = document.getElementById("requestResult");
     if(!box || !reservationId) return;
 
@@ -1400,15 +1413,13 @@ async function RP_refreshPublicReservationStatus(){
       text = "<strong>Solicitud enviada.</strong><br>Tu reserva sigue pendiente de confirmación.";
     }
 
-    renderPublic(updated);
-
-setTimeout(()=>{
-  const box2 = document.getElementById("requestResult");
-  if(box2){
-    box2.innerHTML = text;
-    box2.classList.remove("hidden");
-  }
-},100);
+    setTimeout(()=>{
+      const box2 = document.getElementById("requestResult");
+      if(box2){
+        box2.innerHTML = text;
+        box2.classList.remove("hidden");
+      }
+    },100);
 
   }catch(err){
     console.warn("No se pudo actualizar estado público.", err);
@@ -1428,7 +1439,13 @@ function RP_startBackendAutoSync(){
     }
 
     if(publicView && !publicView.classList.contains("hidden")){
-      RP_refreshPublicReservationStatus();
+      const slug = location.hash.replace("#/","").trim();
+
+if(publicView && !publicView.classList.contains("hidden") && slug){
+  openPublic(slug);
+}else{
+  RP_refreshPublicReservationStatus();
+}
     }
   }, 1000);
 
@@ -1443,14 +1460,21 @@ function RP_startBackendAutoSync(){
     if(publicView && !publicView.classList.contains("hidden")){
       RP_refreshPublicReservationStatus();
     }
-  }, 10000);
+  }, 3000);
 }
 
 window.addEventListener("load", RP_startBackendAutoSync);
 window.addEventListener("hashchange", ()=>{
   setTimeout(()=>{
-    RP_refreshPublicReservationStatus();
-  }, 1000);
+    const slug = location.hash.replace("#/","").trim();
+
+    if(slug){
+      openPublic(slug);
+    }else{
+      publicBusinessId = null;
+      show("authView");
+    }
+  }, 300);
 });
 
 /* FIX STATUS BACKEND SYNC
@@ -3018,6 +3042,13 @@ if(galleryFilesInput){
         return;
       }
 
+      // Si la vista pública está abierta desde el botón "Abrir vista pública", no la cierres sola.
+      if(pub && !pub.classList.contains("hidden") && publicBusinessId){
+        if(auth) auth.classList.add("hidden");
+        if(dash) dash.classList.add("hidden");
+        return;
+      }
+
       const u = (typeof currentUser === "function") ? currentUser() : null;
       const staff = safeGetStaffSession();
 
@@ -3208,4 +3239,49 @@ if(galleryFilesInput){
   window.addEventListener("load", ()=>setTimeout(()=>{RP_labelReservationCells();RP_updatePublicButtonState();}, 800));
   document.addEventListener("click", ()=>setTimeout(()=>{RP_labelReservationCells();RP_updatePublicButtonState();}, 200));
   document.addEventListener("change", ()=>setTimeout(RP_updatePublicButtonState, 100));
+})();
+
+
+/* =====================================================
+   FIX FINAL ESTABLE: volver + vista pública + sync de horarios
+   ===================================================== */
+(function(){
+  function RP_clearPublicHash(){
+    publicBusinessId = null;
+    if(location.hash){
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  }
+
+  window.addEventListener("load", ()=>{
+    setTimeout(()=>{
+      const back = document.getElementById("backBtn");
+      if(back){
+        back.onclick = ()=>{
+          RP_clearPublicHash();
+          if(typeof currentUser === "function" && currentUser()) loadDashboard();
+          else show("authView");
+        };
+      }
+
+      const openBtn = document.getElementById("openPublicBtn");
+      if(openBtn){
+        openBtn.onclick = ()=>{
+          const u = typeof currentUser === "function" ? currentUser() : null;
+          if(!u) return;
+          const targetHash = "#/" + u.slug;
+          if(location.hash !== targetHash) history.pushState(null, "", targetHash);
+          openPublic(u.slug);
+        };
+      }
+    },500);
+  });
+
+  // Refresco rápido de la vista pública: actualiza horarios libres/ocupados sin tocar el formulario.
+  setInterval(()=>{
+    const publicView = document.getElementById("publicView");
+    if(publicView && !publicView.classList.contains("hidden") && typeof RP_refreshPublicReservationStatus === "function"){
+      RP_refreshPublicReservationStatus();
+    }
+  },3000);
 })();
