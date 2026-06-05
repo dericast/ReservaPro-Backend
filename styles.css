@@ -1020,3 +1020,10 @@ tr:hover{background:#eef4ff !important;}
     grid-template-columns:1fr !important;
   }
 }
+
+
+/* FIX FINAL: permisos por rol */
+.rp-force-hidden-role{display:none!important;}
+body[data-rp-role="Staff"] #staffLogoutBtn{display:inline-block!important;}
+body[data-rp-role="Staff"] .rp-classic-badge::after{content:" · Modo empleado";}
+body[data-rp-role="Recepción"] .rp-classic-badge::after{content:" · Recepción";}

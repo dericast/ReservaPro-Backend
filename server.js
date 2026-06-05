@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 const dbPath = path.join(__dirname, "reservapro.sqlite");
 const db = new sqlite3.Database(dbPath);
@@ -89,8 +89,6 @@ app.post("/api/register", (req, res) => {
     slots: [],
     reservations: [],
     gallery: [],
-    businessLogo: "",
-    workGallery: [],
     staff: []
   };
 
@@ -141,38 +139,27 @@ app.post("/api/login", (req, res) => {
 app.post("/api/staff-login", (req, res) => {
   const { email, password } = req.body;
 
-  const loginEmail = String(email || "").trim().toLowerCase();
-  const loginPass = String(password || "").trim();
-
-  if(!loginEmail || !loginPass){
-    return res.status(400).json({ error: "Faltan datos." });
-  }
-
   db.all(`SELECT * FROM businesses`, [], (err, rows) => {
     if (err) return res.status(500).json({ error: "Error del servidor." });
+
+    const loginEmail = String(email || "").trim().toLowerCase();
+    const loginPass = String(password || "");
 
     for (const row of rows) {
       let business;
 
       try {
-        business = JSON.parse(row.data || "{}");
+        business = JSON.parse(row.data);
       } catch (e) {
         continue;
       }
 
-      business.id = business.id || row.id;
-      business.email = business.email || row.email;
-      business.businessName = business.businessName || row.businessName;
-      business.slug = business.slug || row.slug;
-
       const staff = Array.isArray(business.staff) ? business.staff : [];
 
-      const foundStaff = staff.find(s => {
-        const staffEmail = String(s.email || "").trim().toLowerCase();
-        const staffPass = String(s.password || s.pass || "").trim();
-
-        return staffEmail === loginEmail && staffPass === loginPass;
-      });
+      const foundStaff = staff.find(s =>
+        String(s.email || "").trim().toLowerCase() === loginEmail &&
+        String(s.password || s.pass || "").trim() === loginPass
+      );
 
       if (foundStaff) {
         return res.json({
@@ -272,6 +259,29 @@ app.post("/api/business/:id/reservations", (req, res) => {
         });
       }
     );
+  });
+});
+
+
+app.get("/api/debug/staff", (req, res) => {
+  db.all(`SELECT * FROM businesses`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Error del servidor." });
+    const businesses = (rows || []).map(row => {
+      let business = {};
+      try { business = JSON.parse(row.data); } catch(e) {}
+      return {
+        id: business.id || row.id,
+        businessName: business.businessName || row.businessName,
+        slug: business.slug || row.slug,
+        staff: (business.staff || []).map(s => ({
+          name: s.name,
+          email: s.email,
+          role: s.role,
+          hasPassword: !!(s.password || s.pass)
+        }))
+      };
+    });
+    res.json({ ok:true, businesses });
   });
 });
 
