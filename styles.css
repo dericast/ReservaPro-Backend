@@ -2173,5 +2173,14 @@ td{
   gap:8px !important;
 }
 
+/* ===== OCULTAR PARPADEO INICIAL ===== */
+body.app-loading{
+  opacity:0 !important;
+}
+
+body{
+  transition:opacity .15s ease !important;
+}
+
 
 

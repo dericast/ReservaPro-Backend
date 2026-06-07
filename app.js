@@ -46,7 +46,15 @@ function slugify(text){
   return (text || "negocio").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
   .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,30) || "negocio";
 }
-function normalizePhone(v){ return (v||"").replace(/[^\d]/g,""); }
+function normalizePhone(v){
+  let phone = String(v || "").replace(/[^\d]/g,"");
+
+  if(phone.length === 10 && /^(809|829|849)/.test(phone)){
+    phone = "1" + phone;
+  }
+
+  return phone;
+}
 function publicUrlFor(u){ return window.location.href.split("#")[0] + "#/" + u.slug; }
 function activeReservations(u){ return (u.reservations || []).filter(r => r.status === "Pendiente" || r.status === "Confirmada"); }
 function isSlotActiveReserved(u, slotId){ return activeReservations(u).some(r => r.slotId === slotId); }
@@ -842,7 +850,16 @@ if(logoBox){
   else free.forEach(s=>{ let opt=document.createElement("option"); opt.value=s.id; opt.textContent=`${s.date} ${s.time}`; slotSel.appendChild(opt); });
 
   await renderPublicGallery(u);
-  document.getElementById("requestResult").classList.add("hidden");
+  const requestBox = document.getElementById("requestResult");
+
+const savedReservation =
+  localStorage.getItem("lastClientReservation_" + u.id) ||
+  localStorage.getItem(clientReservationKey(u.id));
+
+if(requestBox && !savedReservation){
+  requestBox.classList.add("hidden");
+  requestBox.innerHTML = "";
+}
   renderClientStatus(u);
 }
 document.getElementById("requestReservationBtn").onclick=async ()=>{
@@ -1357,6 +1374,7 @@ async function RP_refreshOwnerDashboardFromBackend(){
     db.currentUserId = updated.id;
     saveDB();
 
+    try{ renderServices(); }catch(e){}
     try{ renderReservations(); }catch(e){}
     try{ renderSlots(); }catch(e){}
     try{ renderCalendarVisual(); }catch(e){}
@@ -3285,3 +3303,47 @@ if(galleryFilesInput){
     }
   },3000);
 })();
+
+// Evita que se vea login/dashboard equivocado mientras carga
+window.addEventListener("load", ()=>{
+  setTimeout(()=>{
+    document.body.classList.remove("app-loading");
+  }, 700);
+});
+
+/* FIX: sesión empleado limpia */
+function RP_fixStaffLogoutClean(){
+  const session = getStaffSession && getStaffSession();
+  const adminLogout = document.getElementById("logoutBtn");
+  const staffBtn = document.getElementById("staffLogoutBtn");
+
+  if(adminLogout){
+    adminLogout.style.display = session ? "none" : "";
+  }
+
+  if(staffBtn){
+    staffBtn.style.display = session ? "" : "none";
+
+    staffBtn.onclick = ()=>{
+      localStorage.removeItem("staffSession");
+      localStorage.setItem("currentRole", "Admin");
+
+      db.currentUserId = null;
+      saveDB();
+
+      publicBusinessId = null;
+      history.replaceState(null, "", location.pathname + location.search);
+
+      renderSession();
+      staffBtn.style.display = "none";
+      if(adminLogout) adminLogout.style.display = "none";
+
+      show("authView");
+    };
+  }
+}
+
+setInterval(()=>{
+  try{ RP_fixStaffLogoutClean(); }catch(e){}
+},500);
+
