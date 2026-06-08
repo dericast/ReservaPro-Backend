@@ -223,7 +223,8 @@ document.getElementById("loginBtn").onclick=async ()=>{
     });
 
     loadDashboard();
-    return;
+setTimeout(()=>location.reload(), 300);
+return;
   }catch(err){
     // Si el backend no responde o la cuenta no existe en backend, intenta login local para no bloquear la app vieja.
     const localUser=db.users.find(x=>
@@ -235,13 +236,20 @@ document.getElementById("loginBtn").onclick=async ()=>{
       db.currentUserId=localUser.id;
       saveDB();
       loadDashboard();
-      return;
+setTimeout(()=>location.reload(), 300);
+return;
     }
 
     alert("Datos incorrectos o backend no disponible.");
   }
 };
-document.getElementById("logoutBtn").onclick=()=>{ db.currentUserId=null; saveDB(); renderSession(); show("authView"); };
+document.getElementById("logoutBtn").onclick=()=>{
+  localStorage.removeItem("staffSession");
+  db.currentUserId = null;
+  saveDB();
+  renderSession();
+  show("authView");
+};
 
 function loadDashboard(){
   const u=currentUser(); if(!u) return show("authView");
@@ -1083,11 +1091,32 @@ function setupBackendSyncButton(){
 }
 
 (function init(){
+
   renderSession();
-  const slug=location.hash.replace("#/","").trim();
-  if(slug) openPublic(slug);
-  else if(currentUser()) loadDashboard();
-  else show("authView");
+
+  const slug = location.hash.replace("#/","").trim();
+
+  const staffSession = JSON.parse(
+    localStorage.getItem("staffSession") || "null"
+  );
+
+  if(staffSession){
+    db.currentUserId = staffSession.businessId;
+    saveDB();
+    loadDashboard();
+    return;
+  }
+
+  if(slug){
+    openPublic(slug);
+  }
+  else if(currentUser()){
+    loadDashboard();
+  }
+  else{
+    show("authView");
+  }
+
 })();
 
 /* FIX BOTÓN "GUARDAR AHORA EN BACKEND"
@@ -1478,7 +1507,7 @@ if(publicView && !publicView.classList.contains("hidden") && slug){
     if(publicView && !publicView.classList.contains("hidden")){
       RP_refreshPublicReservationStatus();
     }
-  }, 3000);
+  }, 15000);
 }
 
 window.addEventListener("load", RP_startBackendAutoSync);
@@ -2517,6 +2546,10 @@ setInterval(()=>{
 function logoutStaffSession(){
   localStorage.removeItem("staffSession");
   localStorage.setItem("currentRole","Admin");
+
+  db.currentUserId = null;
+  saveDB();
+
   location.reload();
 }
 
@@ -2539,7 +2572,7 @@ function devLocalAccess(){
   try{ renderPremiumCalendar && renderPremiumCalendar(); }catch(e){}
 }
 
-devLocalAccess();
+// devLocalAccess();
 
 function enforceRealStaffSession(){
   const session = getStaffSession && getStaffSession();
@@ -2734,10 +2767,23 @@ function addStaffLogoutButton(){
   btn.textContent = "Cerrar sesión empleado";
 
   btn.onclick = ()=>{
-    localStorage.removeItem("staffSession");
-    localStorage.setItem("currentRole","Admin");
-    location.reload();
-  };
+
+  localStorage.removeItem("staffSession");
+  localStorage.removeItem("currentRole");
+
+  db.currentUserId = null;
+  saveDB();
+
+  publicBusinessId = null;
+
+  history.replaceState(
+    null,
+    "",
+    location.pathname + location.search
+  );
+
+  location.reload();
+};
 
   header.appendChild(btn);
 }
@@ -3311,39 +3357,5 @@ window.addEventListener("load", ()=>{
   }, 700);
 });
 
-/* FIX: sesión empleado limpia */
-function RP_fixStaffLogoutClean(){
-  const session = getStaffSession && getStaffSession();
-  const adminLogout = document.getElementById("logoutBtn");
-  const staffBtn = document.getElementById("staffLogoutBtn");
 
-  if(adminLogout){
-    adminLogout.style.display = session ? "none" : "";
-  }
-
-  if(staffBtn){
-    staffBtn.style.display = session ? "" : "none";
-
-    staffBtn.onclick = ()=>{
-      localStorage.removeItem("staffSession");
-      localStorage.setItem("currentRole", "Admin");
-
-      db.currentUserId = null;
-      saveDB();
-
-      publicBusinessId = null;
-      history.replaceState(null, "", location.pathname + location.search);
-
-      renderSession();
-      staffBtn.style.display = "none";
-      if(adminLogout) adminLogout.style.display = "none";
-
-      show("authView");
-    };
-  }
-}
-
-setInterval(()=>{
-  try{ RP_fixStaffLogoutClean(); }catch(e){}
-},500);
 
