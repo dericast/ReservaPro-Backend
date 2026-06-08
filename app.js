@@ -618,11 +618,11 @@ function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
   }
 
   if(action === "Cancelada"){
-    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue cancelada.`;
+    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue cancelada para ${slot ? slot.date + " a las " + slot.time : "el horario seleccionado"}.`;
   }
 
   if(action === "Completada"){
-    message = `Hola ${r.clientName}, tu cita en ${u.businessName} fue marcada como completada. Gracias por visitarnos.`;
+    message = `Hola ${r.clientName}, tu cita en ${u.businessName} para ${r.serviceName} del ${slot ? slot.date + " a las " + slot.time : "horario seleccionado"} fue marcada como completada. Gracias por visitarnos.`;
   }
 
   if(action === "Reagendada"){
@@ -635,25 +635,31 @@ Nuevo horario:
 ${newSlot ? newSlot.date + " a las " + newSlot.time : "Nuevo horario"}.`;
   }
 
-  const phone = normalizePhone(r.clientPhone);
-  const email = String(r.clientEmail || "").trim();
+  const choice = prompt(
+    "¿Cómo deseas avisar al cliente?\n\n1. WhatsApp\n2. Correo\n3. No avisar"
+  );
 
-  if(phone && confirm("¿Avisar al cliente por WhatsApp?")){
-    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), "_blank");
+  if(choice === "1"){
+    const phone = normalizePhone(r.clientPhone);
+    if(!phone) return alert("Este cliente no tiene teléfono.");
+    window.location.href = "https://wa.me/" + phone + "?text=" + encodeURIComponent(message);
   }
 
-  if(email && confirm("¿Avisar al cliente por correo?")){
+  if(choice === "2"){
+    const email = String(r.clientEmail || "").trim();
+    if(!email) return alert("Este cliente no tiene correo.");
     window.open(
       "https://mail.google.com/mail/?view=cm&fs=1&to=" +
       encodeURIComponent(email) +
       "&su=" +
-      encodeURIComponent("Estado de tu reserva") +
+      encodeURIComponent("Estado de reserva") +
       "&body=" +
       encodeURIComponent(message),
       "_blank"
     );
   }
 }
+
 
 
 function renderReservations(){
@@ -786,19 +792,19 @@ tr.querySelector('[data-a="reschedule"]').onclick=()=>{
 
   const oldSlot=(u.slots||[]).find(s=>s.id===r.slotId);
 
-  r.slotId=selected.id;
+ r.slotId=selected.id;
 
-  saveDB();
+saveDB();
 
-  RP_notifyReservationClient(u,r,"Reagendada",oldSlot,selected);
+try{
+  backendSaveCurrentBusiness();
+}catch(e){}
 
-  try{
-    backendSaveCurrentBusiness();
-  }catch(e){}
+renderReservations();
 
-  renderReservations();
+alert("Cita reagendada correctamente.");
 
-  alert("Cita reagendada correctamente.");
+RP_notifyReservationClient(u,r,"Reagendada",oldSlot,selected);
 };
 const staffSelect = tr.querySelector(".reservationStaff");
 
