@@ -606,6 +606,55 @@ function renderCalendarVisual(){
   });
 }
 
+function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
+  if(!u || !r) return;
+
+  const slot = newSlot || (u.slots || []).find(s => s.id === r.slotId);
+
+  let message = "";
+
+  if(action === "Confirmada"){
+    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue confirmada para ${slot ? slot.date + " a las " + slot.time : "el horario seleccionado"}.`;
+  }
+
+  if(action === "Cancelada"){
+    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue cancelada.`;
+  }
+
+  if(action === "Completada"){
+    message = `Hola ${r.clientName}, tu cita en ${u.businessName} fue marcada como completada. Gracias por visitarnos.`;
+  }
+
+  if(action === "Reagendada"){
+    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue reagendada.
+
+Horario anterior:
+${oldSlot ? oldSlot.date + " a las " + oldSlot.time : "Horario anterior"}
+
+Nuevo horario:
+${newSlot ? newSlot.date + " a las " + newSlot.time : "Nuevo horario"}.`;
+  }
+
+  const phone = normalizePhone(r.clientPhone);
+  const email = String(r.clientEmail || "").trim();
+
+  if(phone && confirm("¿Avisar al cliente por WhatsApp?")){
+    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), "_blank");
+  }
+
+  if(email && confirm("¿Avisar al cliente por correo?")){
+    window.open(
+      "https://mail.google.com/mail/?view=cm&fs=1&to=" +
+      encodeURIComponent(email) +
+      "&su=" +
+      encodeURIComponent("Estado de tu reserva") +
+      "&body=" +
+      encodeURIComponent(message),
+      "_blank"
+    );
+  }
+}
+
 
 function renderReservations(){
   const u=currentUser(), tb=document.getElementById("reservationsTable"), hist=document.getElementById("historyTable");
@@ -654,6 +703,7 @@ const isStaffMode = staffSession && staffSession.role === "Staff";
       rr.status="Cancelada";
       saveDB();
       backendSaveCurrentBusiness();
+      RP_notifyReservationClient(db.users[idx], rr, "Cancelada");
       renderReservations();
       renderPremiumCalendar();
     }
@@ -670,6 +720,7 @@ const isStaffMode = staffSession && staffSession.role === "Staff";
       rr.status="Confirmada";
       saveDB();
       backendSaveCurrentBusiness();
+      RP_notifyReservationClient(db.users[idx], rr, "Confirmada");
       renderReservations();
       renderPremiumCalendar();
     }
@@ -686,6 +737,7 @@ const isStaffMode = staffSession && staffSession.role === "Staff";
       rr.status="Completada";
       saveDB();
       backendSaveCurrentBusiness();
+      RP_notifyReservationClient(db.users[idx], rr, "Completada");
       renderReservations();
       renderPremiumCalendar();
     }
@@ -732,9 +784,13 @@ tr.querySelector('[data-a="reschedule"]').onclick=()=>{
     return;
   }
 
+  const oldSlot=(u.slots||[]).find(s=>s.id===r.slotId);
+
   r.slotId=selected.id;
 
   saveDB();
+
+  RP_notifyReservationClient(u,r,"Reagendada",oldSlot,selected);
 
   try{
     backendSaveCurrentBusiness();
