@@ -746,17 +746,8 @@ Gracias por tu comprensión. ¡Te esperamos!`;
     }
 
    const encodedMessage = encodeURIComponent(message);
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-if(isMobile){
-  window.location.href =
-    "whatsapp://send?phone=" + phone + "&text=" + encodedMessage;
-}else{
-  window.open(
-    "https://wa.me/" + phone + "?text=" + encodedMessage,
-    "_blank"
-  );
-}
+window.location.href =
+  "whatsapp://send?phone=" + phone + "&text=" + encodedMessage;
   }
 
   if(choice === "2"){
