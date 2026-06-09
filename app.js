@@ -745,9 +745,10 @@ Gracias por tu comprensión. ¡Te esperamos!`;
       return;
     }
 
-   const encodedMessage = encodeURIComponent(message);
-window.location.href =
-  "whatsapp://send?phone=" + phone + "&text=" + encodedMessage;
+ const whatsappUrl =
+  "https://wa.me/" + phone + "?text=" + encodeURIComponent(message);
+
+window.location.href = whatsappUrl;
   }
 
   if(choice === "2"){
