@@ -929,7 +929,8 @@ renderReservations();
 
 alert("Cita reagendada correctamente.");
 
-RP_notifyReservationClient(u,r,"Reagendada",oldSlot,selected);
+const rr=(u.reservations||[]).find(x=>x.id===r.id) || r;
+RP_notifyReservationClient(u,rr,"Reagendada",oldSlot,selected);
 };
 const staffSelect = tr.querySelector(".reservationStaff");
 
