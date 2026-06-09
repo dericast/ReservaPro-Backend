@@ -749,14 +749,17 @@ Gracias por tu comprensión. ¡Te esperamos!`;
 
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-const whatsappUrl = isMobile
-  ? "whatsapp://send?phone=" + phone + "&text=" + encodedMessage
-  : "https://wa.me/" + phone + "?text=" + encodedMessage;
+const encodedMessage = encodeURIComponent(message);
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 if(isMobile){
-  window.location.href = whatsappUrl;
+  window.location.href =
+    "whatsapp://send?phone=" + phone + "&text=" + encodedMessage;
 }else{
-  window.open(whatsappUrl, "_blank");
+  window.open(
+    "https://wa.me/" + phone + "?text=" + encodedMessage,
+    "_blank"
+  );
 }
   }
 
