@@ -746,10 +746,6 @@ Gracias por tu comprensión. ¡Te esperamos!`;
     }
 
    const encodedMessage = encodeURIComponent(message);
-
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-const encodedMessage = encodeURIComponent(message);
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 if(isMobile){
