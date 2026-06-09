@@ -745,10 +745,18 @@ Gracias por tu comprensión. ¡Te esperamos!`;
       return;
     }
 
- const whatsappUrl =
-  "https://wa.me/" + phone + "?text=" + encodeURIComponent(message);
+   const encodedMessage = encodeURIComponent(message);
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-window.location.href = whatsappUrl;
+if(isMobile){
+  window.location.href =
+    "whatsapp://send?phone=" + phone + "&text=" + encodedMessage;
+}else{
+  window.open(
+    "https://wa.me/" + phone + "?text=" + encodedMessage,
+    "_blank"
+  );
+}
   }
 
   if(choice === "2"){
