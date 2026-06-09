@@ -606,33 +606,82 @@ function renderCalendarVisual(){
   });
 }
 
+function formatReservaDate(dateStr){
+  if(!dateStr) return "";
+  const parts = dateStr.split("-");
+  if(parts.length !== 3) return dateStr;
+  return parts[2] + " de " + [
+    "enero","febrero","marzo","abril","mayo","junio",
+    "julio","agosto","septiembre","octubre","noviembre","diciembre"
+  ][Number(parts[1]) - 1] + " de " + parts[0];
+}
+
+function formatReservaTime(timeStr){
+  if(!timeStr) return "";
+  const parts = timeStr.split(":");
+  let h = Number(parts[0]);
+  const m = parts[1] || "00";
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if(h === 0) h = 12;
+  return h + ":" + m + " " + ampm;
+}
+
 function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
   if(!u || !r) return;
 
   const slot = newSlot || (u.slots || []).find(s => s.id === r.slotId);
 
+  const fecha = slot ? formatReservaDate(slot.date) : "";
+  const hora = slot ? formatReservaTime(slot.time) : "";
+
   let message = "";
 
   if(action === "Confirmada"){
-    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue confirmada para ${slot ? slot.date + " a las " + slot.time : "el horario seleccionado"}.`;
+    message = `🎉 ¡Hola, ${r.clientName}!
+
+Tu cita en ${u.businessName} ha sido confirmada.
+
+🗓️ Fecha: ${fecha}
+
+⏰ Hora: ${hora}
+
+Te esperamos. ¡Gracias por reservar con nosotros!`;
   }
 
   if(action === "Cancelada"){
-    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue cancelada para ${slot ? slot.date + " a las " + slot.time : "el horario seleccionado"}.`;
+    message = `Hola, ${r.clientName}.
+
+Lamentamos informarte que tu cita en ${u.businessName}, programada para el ${fecha} a las ${hora}, ha sido cancelada.
+
+Si lo deseas, puedes realizar una nueva reserva desde nuestro enlace de reservas.
+
+Gracias por tu comprensión.`;
   }
 
   if(action === "Completada"){
-    message = `Hola ${r.clientName}, tu cita en ${u.businessName} para ${r.serviceName} del ${slot ? slot.date + " a las " + slot.time : "horario seleccionado"} fue marcada como completada. Gracias por visitarnos.`;
+    message = `✨ ¡Gracias por visitarnos, ${r.clientName}!
+
+Tu cita en ${u.businessName} fue completada exitosamente.
+
+Esperamos verte nuevamente muy pronto.
+
+Gracias por confiar en nosotros.`;
   }
 
   if(action === "Reagendada"){
-    message = `Hola ${r.clientName}, tu reserva en ${u.businessName} para ${r.serviceName} fue reagendada.
+    const nuevaFecha = newSlot ? formatReservaDate(newSlot.date) : "";
+    const nuevaHora = newSlot ? formatReservaTime(newSlot.time) : "";
 
-Horario anterior:
-${oldSlot ? oldSlot.date + " a las " + oldSlot.time : "Horario anterior"}
+    message = `📢 ¡Hola, ${r.clientName}!
 
-Nuevo horario:
-${newSlot ? newSlot.date + " a las " + newSlot.time : "Nuevo horario"}.`;
+Tu cita en ${u.businessName} ha sido reagendada.
+
+🗓️ Nueva fecha: ${nuevaFecha}
+
+⏰ Nueva hora: ${nuevaHora}
+
+Gracias por tu comprensión. ¡Te esperamos!`;
   }
 
   const choice = prompt(
@@ -642,7 +691,7 @@ ${newSlot ? newSlot.date + " a las " + newSlot.time : "Nuevo horario"}.`;
   if(choice === "1"){
     const phone = normalizePhone(r.clientPhone);
     if(!phone) return alert("Este cliente no tiene teléfono.");
-    window.location.href = "https://wa.me/" + phone + "?text=" + encodeURIComponent(message);
+    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), "_blank");
   }
 
   if(choice === "2"){
@@ -659,7 +708,6 @@ ${newSlot ? newSlot.date + " a las " + newSlot.time : "Nuevo horario"}.`;
     );
   }
 }
-
 
 
 function renderReservations(){
