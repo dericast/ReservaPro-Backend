@@ -627,10 +627,41 @@ function formatReservaTime(timeStr){
   return h + ":" + m + " " + ampm;
 }
 
+function formatReservaDate(dateStr){
+  if(!dateStr) return "";
+  const parts = dateStr.split("-");
+
+  if(parts.length !== 3) return dateStr;
+
+  return parts[2] + " de " + [
+    "enero","febrero","marzo","abril","mayo","junio",
+    "julio","agosto","septiembre","octubre","noviembre","diciembre"
+  ][Number(parts[1]) - 1] + " de " + parts[0];
+}
+
+function formatReservaTime(timeStr){
+  if(!timeStr) return "";
+
+  const parts = timeStr.split(":");
+
+  let h = Number(parts[0]);
+  const m = parts[1] || "00";
+
+  const ampm = h >= 12 ? "PM" : "AM";
+
+  h = h % 12;
+  if(h === 0) h = 12;
+
+  return h + ":" + m + " " + ampm;
+}
+
 function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
+
   if(!u || !r) return;
 
-  const slot = newSlot || (u.slots || []).find(s => s.id === r.slotId);
+  const slot =
+    newSlot ||
+    (u.slots || []).find(s => s.id === r.slotId);
 
   const fecha = slot ? formatReservaDate(slot.date) : "";
   const hora = slot ? formatReservaTime(slot.time) : "";
@@ -638,29 +669,36 @@ function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
   let message = "";
 
   if(action === "Confirmada"){
-    message = `🎉 ¡Hola, ${r.clientName}!
+
+    message = `✅ ¡Hola, ${r.clientName}!
 
 Tu cita en ${u.businessName} ha sido confirmada.
 
-🗓️ Fecha: ${fecha}
+📅 Fecha: ${fecha}
 
-⏰ Hora: ${hora}
+🕐 Hora: ${hora}
 
 Te esperamos. ¡Gracias por reservar con nosotros!`;
   }
 
   if(action === "Cancelada"){
-    message = `Hola, ${r.clientName}.
 
-Lamentamos informarte que tu cita en ${u.businessName}, programada para el ${fecha} a las ${hora}, ha sido cancelada.
+    message = `❌ Hola, ${r.clientName}.
 
-Si lo deseas, puedes realizar una nueva reserva desde nuestro enlace de reservas.
+Tu cita en ${u.businessName} programada para:
+
+📅 ${fecha}
+
+🕐 ${hora}
+
+ha sido cancelada.
 
 Gracias por tu comprensión.`;
   }
 
   if(action === "Completada"){
-    message = `✨ ¡Gracias por visitarnos, ${r.clientName}!
+
+    message = `🎉 ¡Gracias por visitarnos, ${r.clientName}!
 
 Tu cita en ${u.businessName} fue completada exitosamente.
 
@@ -670,43 +708,83 @@ Gracias por confiar en nosotros.`;
   }
 
   if(action === "Reagendada"){
-    const nuevaFecha = newSlot ? formatReservaDate(newSlot.date) : "";
-    const nuevaHora = newSlot ? formatReservaTime(newSlot.time) : "";
 
-    message = `📢 ¡Hola, ${r.clientName}!
+    const nuevaFecha = newSlot
+      ? formatReservaDate(newSlot.date)
+      : "";
+
+    const nuevaHora = newSlot
+      ? formatReservaTime(newSlot.time)
+      : "";
+
+    message = `🔄 ¡Hola, ${r.clientName}!
 
 Tu cita en ${u.businessName} ha sido reagendada.
 
-🗓️ Nueva fecha: ${nuevaFecha}
+📅 Nueva fecha: ${nuevaFecha}
 
-⏰ Nueva hora: ${nuevaHora}
+🕐 Nueva hora: ${nuevaHora}
 
 Gracias por tu comprensión. ¡Te esperamos!`;
   }
 
   const choice = prompt(
-    "¿Cómo deseas avisar al cliente?\n\n1. WhatsApp\n2. Correo\n3. No avisar"
+`¿Cómo deseas avisar al cliente?
+
+1 = WhatsApp
+2 = Correo
+3 = No avisar`
   );
 
   if(choice === "1"){
+
     const phone = normalizePhone(r.clientPhone);
-    if(!phone) return alert("Este cliente no tiene teléfono.");
-    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), "_blank");
+
+    if(!phone){
+      alert("Este cliente no tiene teléfono.");
+      return;
+    }
+
+    const whatsappUrl =
+      "https://wa.me/" +
+      phone +
+      "?text=" +
+      encodeURIComponent(message);
+
+    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+      window.location.href = whatsappUrl;
+    }else{
+      window.open(whatsappUrl, "_blank");
+    }
   }
 
   if(choice === "2"){
+
     const email = String(r.clientEmail || "").trim();
-    if(!email) return alert("Este cliente no tiene correo.");
+
+    if(!email){
+      alert("Este cliente no tiene correo.");
+      return;
+    }
+
+    let subject = "Estado de reserva";
+
+    if(action === "Confirmada") subject = "Reserva confirmada";
+    if(action === "Cancelada") subject = "Reserva cancelada";
+    if(action === "Completada") subject = "Reserva completada";
+    if(action === "Reagendada") subject = "Reserva reagendada";
+
     window.open(
       "https://mail.google.com/mail/?view=cm&fs=1&to=" +
       encodeURIComponent(email) +
       "&su=" +
-      encodeURIComponent("Estado de reserva") +
+      encodeURIComponent(subject) +
       "&body=" +
       encodeURIComponent(message),
       "_blank"
     );
   }
+
 }
 
 
