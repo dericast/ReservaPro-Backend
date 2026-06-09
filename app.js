@@ -775,15 +775,15 @@ if(isMobile){
     if(action === "Completada") subject = "Reserva completada";
     if(action === "Reagendada") subject = "Reserva reagendada";
 
-    window.open(
-      "https://mail.google.com/mail/?view=cm&fs=1&to=" +
-      encodeURIComponent(email) +
-      "&su=" +
-      encodeURIComponent(subject) +
-      "&body=" +
-      encodeURIComponent(message),
-      "_blank"
-    );
+   const mailUrl =
+  "https://mail.google.com/mail/?view=cm&fs=1&to=" +
+  encodeURIComponent(email) +
+  "&su=" +
+  encodeURIComponent(subject) +
+  "&body=" +
+  encodeURIComponent(message);
+
+window.location.href = mailUrl;
   }
 
 }
