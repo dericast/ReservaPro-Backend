@@ -670,26 +670,26 @@ function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
 
   if(action === "Confirmada"){
 
-    message = `✅ ¡Hola, ${r.clientName}!
+    message = ` ¡Hola, ${r.clientName}!
 
 Tu cita en ${u.businessName} ha sido confirmada.
 
-📅 Fecha: ${fecha}
+ Fecha: ${fecha}
 
-🕐 Hora: ${hora}
+ Hora: ${hora}
 
 Te esperamos. ¡Gracias por reservar con nosotros!`;
   }
 
   if(action === "Cancelada"){
 
-    message = `❌ Hola, ${r.clientName}.
+    message = ` Hola, ${r.clientName}.
 
 Tu cita en ${u.businessName} programada para:
 
-📅 ${fecha}
+${fecha}
 
-🕐 ${hora}
+${hora}
 
 ha sido cancelada.
 
@@ -698,7 +698,7 @@ Gracias por tu comprensión.`;
 
   if(action === "Completada"){
 
-    message = `🎉 ¡Gracias por visitarnos, ${r.clientName}!
+    message = ` ¡Gracias por visitarnos, ${r.clientName}!
 
 Tu cita en ${u.businessName} fue completada exitosamente.
 
@@ -717,13 +717,13 @@ Gracias por confiar en nosotros.`;
       ? formatReservaTime(newSlot.time)
       : "";
 
-    message = `🔄 ¡Hola, ${r.clientName}!
+    message = ` ¡Hola, ${r.clientName}!
 
 Tu cita en ${u.businessName} ha sido reagendada.
 
-📅 Nueva fecha: ${nuevaFecha}
+Nueva fecha: ${nuevaFecha}
 
-🕐 Nueva hora: ${nuevaHora}
+Nueva hora: ${nuevaHora}
 
 Gracias por tu comprensión. ¡Te esperamos!`;
   }
@@ -745,17 +745,19 @@ Gracias por tu comprensión. ¡Te esperamos!`;
       return;
     }
 
-    const whatsappUrl =
-      "https://wa.me/" +
-      phone +
-      "?text=" +
-      encodeURIComponent(message);
+   const encodedMessage = encodeURIComponent(message);
 
-    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
-      window.location.href = whatsappUrl;
-    }else{
-      window.open(whatsappUrl, "_blank");
-    }
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const whatsappUrl = isMobile
+  ? "whatsapp://send?phone=" + phone + "&text=" + encodedMessage
+  : "https://wa.me/" + phone + "?text=" + encodedMessage;
+
+if(isMobile){
+  window.location.href = whatsappUrl;
+}else{
+  window.open(whatsappUrl, "_blank");
+}
   }
 
   if(choice === "2"){
