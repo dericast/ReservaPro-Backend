@@ -821,8 +821,6 @@ const isStaffMode = staffSession && staffSession.role === "Staff";
         <button class="btn small ok" data-a="confirm">Confirmar</button>
         <button class="btn small" data-a="complete">Completar</button>
         <button class="btn small" data-a="reschedule">Reagendar</button>
-        <a class="btn small" target="_blank" href="${links.wa}">WhatsApp</a>
-        <a class="btn small" target="_blank" href="${links.mail}">Correo</a>
       </td>`;
     tr.querySelector('[data-a="cancel"]').onclick=()=>{backendLoadBusinessBySlug(currentUser().slug).then(result=>{
   if(result && result.business){
@@ -2060,11 +2058,17 @@ function renderAppointmentReminders(){
     const date = slot ? slot.date : "";
     const time = slot ? slot.time : "";
 
-    const message = `Hola ${clientName} 👋
+    const message = `📌 Hola, ${clientName}.
 
-Te recordamos que tienes una cita en ${businessName} para ${serviceName} el ${date} a las ${time}.
+Te recordamos que tienes una cita programada en ${businessName}.
 
-¡Te esperamos!`;
+💼 Servicio: ${serviceName}
+
+📅 Fecha: ${formatReservaDate(date)}
+
+🕐 Hora: ${formatReservaTime(time)}
+
+Te esperamos. ¡Gracias por confiar en nosotros!`;
 
     const phone = String(r.clientPhone || "").replace(/[^\d]/g,"");
     const email = String(r.clientEmail || "").trim();
