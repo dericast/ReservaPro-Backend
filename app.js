@@ -1282,6 +1282,11 @@ function setupBackendSyncButton(){
 
   const slug = location.hash.replace("#/","").trim();
 
+  if(slug){
+    openPublic(slug);
+    return;
+  }
+
   const staffSession = JSON.parse(
     localStorage.getItem("staffSession") || "null"
   );
@@ -1293,13 +1298,9 @@ function setupBackendSyncButton(){
     return;
   }
 
-  if(slug){
-    openPublic(slug);
-  }
-  else if(currentUser()){
+  if(currentUser()){
     loadDashboard();
-  }
-  else{
+  }else{
     show("authView");
   }
 
