@@ -2161,7 +2161,11 @@ function renderPremiumCalendar(){
     const div = document.createElement("div");
     div.className = "premium-calendar-day";
 
-    const today = new Date().toISOString().slice(0,10);
+    const now = new Date();
+const today =
+  now.getFullYear() + "-" +
+  String(now.getMonth() + 1).padStart(2,"0") + "-" +
+  String(now.getDate()).padStart(2,"0");
     if(dateStr === today){
       div.classList.add("today");
     }
