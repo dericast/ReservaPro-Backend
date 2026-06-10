@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,39 +8,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-const dbPath = path.join(__dirname, "reservapro.sqlite");
-const db = new sqlite3.Database(dbPath);
-
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS businesses (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE,
-      password TEXT,
-      businessName TEXT,
-      slug TEXT UNIQUE,
-      data TEXT,
-      createdAt TEXT,
-      updatedAt TEXT
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS reservations (
-      id TEXT PRIMARY KEY,
-      businessId TEXT,
-      clientName TEXT,
-      clientPhone TEXT,
-      clientEmail TEXT,
-      serviceName TEXT,
-      slotId TEXT,
-      status TEXT,
-      data TEXT,
-      createdAt TEXT,
-      updatedAt TEXT
-    )
-  `);
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -65,11 +35,11 @@ app.get("/", (req, res) => {
   res.json({
     ok: true,
     app: "ReservaPro Backend",
-    message: "Backend funcionando correctamente"
+    message: "Backend funcionando correctamente con Supabase"
   });
 });
 
-app.post("/api/register", (req, res) => {
+app.post("/api/register", async (req, res) => {
   const { email, password, businessName } = req.body;
 
   if (!email || !password || !businessName) {
@@ -83,6 +53,8 @@ app.post("/api/register", (req, res) => {
   const initialData = {
     id,
     email: email.toLowerCase(),
+    pass: password,
+    password,
     businessName,
     slug,
     services: [],
@@ -92,176 +64,204 @@ app.post("/api/register", (req, res) => {
     staff: []
   };
 
-  db.run(
-    `INSERT INTO businesses (id, email, password, businessName, slug, data, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      email.toLowerCase(),
-      password,
-      businessName,
-      slug,
-      JSON.stringify(initialData),
-      date,
-      date
-    ],
-    function (err) {
-      if (err) {
-        return res.status(400).json({ error: "Ese correo ya existe o hubo un error." });
-      }
+  const { error } = await supabase.from("businesses").insert({
+    id,
+    email: email.toLowerCase(),
+    password,
+    businessName,
+    slug,
+    data: initialData,
+    createdAt: date,
+    updatedAt: date
+  });
 
-      res.json({
-        ok: true,
-        business: initialData
-      });
-    }
-  );
-});
+  if (error) {
+    console.error("REGISTER_ERROR", error);
+    return res.status(400).json({ error: "Ese correo ya existe o hubo un error." });
+  }
 
-app.post("/api/login", (req, res) => {
-  const { email, password } = req.body;
-
-  db.get(
-    `SELECT * FROM businesses WHERE email = ? AND password = ?`,
-    [String(email || "").toLowerCase(), password],
-    (err, row) => {
-      if (err) return res.status(500).json({ error: "Error del servidor." });
-      if (!row) return res.status(401).json({ error: "Datos incorrectos." });
-
-      res.json({
-        ok: true,
-        business: JSON.parse(row.data)
-      });
-    }
-  );
-});
-
-app.post("/api/staff-login", (req, res) => {
-  const { email, password } = req.body;
-
-  db.all(`SELECT * FROM businesses`, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: "Error del servidor." });
-
-    const loginEmail = String(email || "").trim().toLowerCase();
-    const loginPass = String(password || "");
-
-    for (const row of rows) {
-      let business;
-
-      try {
-        business = JSON.parse(row.data);
-      } catch (e) {
-        continue;
-      }
-
-      const staff = Array.isArray(business.staff) ? business.staff : [];
-
-      const foundStaff = staff.find(s =>
-        String(s.email || "").trim().toLowerCase() === loginEmail &&
-        String(s.password || s.pass || "").trim() === loginPass
-      );
-
-      if (foundStaff) {
-        return res.json({
-          ok: true,
-          business,
-          staff: foundStaff
-        });
-      }
-    }
-
-    return res.status(401).json({
-      error: "Empleado no encontrado o contraseña incorrecta."
-    });
+  res.json({
+    ok: true,
+    business: initialData
   });
 });
 
-app.get("/api/business/:slug", (req, res) => {
-  db.get(
-    `SELECT * FROM businesses WHERE slug = ?`,
-    [req.params.slug],
-    (err, row) => {
-      if (err) return res.status(500).json({ error: "Error del servidor." });
-      if (!row) return res.status(404).json({ error: "Negocio no encontrado." });
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
 
-      res.json({
-        ok: true,
-        business: JSON.parse(row.data)
-      });
-    }
-  );
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("email", String(email || "").toLowerCase())
+    .eq("password", password)
+    .maybeSingle();
+
+  if (error) {
+    console.error("LOGIN_ERROR", error);
+    return res.status(500).json({ error: "Error del servidor." });
+  }
+
+  if (!data) {
+    return res.status(401).json({ error: "Datos incorrectos." });
+  }
+
+  res.json({
+    ok: true,
+    business: data.data
+  });
 });
 
-app.put("/api/business/:id", (req, res) => {
+app.post("/api/staff-login", async (req, res) => {
+  const { email, password } = req.body;
+
+  const loginEmail = String(email || "").trim().toLowerCase();
+  const loginPass = String(password || "");
+
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("*");
+
+  if (error) {
+    console.error("STAFF_LOGIN_ERROR", error);
+    return res.status(500).json({ error: "Error del servidor." });
+  }
+
+  for (const row of data || []) {
+    const business = row.data || {};
+    const staff = Array.isArray(business.staff) ? business.staff : [];
+
+    const foundStaff = staff.find(s =>
+      String(s.email || "").trim().toLowerCase() === loginEmail &&
+      String(s.password || s.pass || "").trim() === loginPass
+    );
+
+    if (foundStaff) {
+      return res.json({
+        ok: true,
+        business,
+        staff: foundStaff
+      });
+    }
+  }
+
+  res.status(401).json({
+    error: "Empleado no encontrado o contraseña incorrecta."
+  });
+});
+
+app.get("/api/business/:slug", async (req, res) => {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("slug", req.params.slug)
+    .maybeSingle();
+
+  if (error) {
+    console.error("BUSINESS_LOAD_ERROR", error);
+    return res.status(500).json({ error: "Error del servidor." });
+  }
+
+  if (!data) {
+    return res.status(404).json({ error: "Negocio no encontrado." });
+  }
+
+  res.json({
+    ok: true,
+    business: data.data
+  });
+});
+
+app.put("/api/business/:id", async (req, res) => {
   const business = req.body.business;
 
   if (!business || !business.id) {
     return res.status(400).json({ error: "Datos inválidos." });
   }
 
-  db.run(
-    `UPDATE businesses
-     SET businessName = ?, slug = ?, data = ?, updatedAt = ?
-     WHERE id = ?`,
-    [
-      business.businessName || "ReservaPro",
-      business.slug || slugify(business.businessName),
-      JSON.stringify(business),
-      now(),
-      req.params.id
-    ],
-    function (err) {
-      if (err) return res.status(500).json({ error: "No se pudo guardar." });
+  const date = now();
 
-      res.json({
-        ok: true,
-        business
-      });
-    }
-  );
+  const payload = {
+    id: business.id,
+    email: String(business.email || "").toLowerCase(),
+    password: business.pass || business.password || "",
+    businessName: business.businessName || "ReservaPro",
+    slug: business.slug || slugify(business.businessName),
+    data: business,
+    updatedAt: date
+  };
+
+  const { error } = await supabase
+    .from("businesses")
+    .upsert(payload, { onConflict: "id" });
+
+  if (error) {
+    console.error("SAVE_BUSINESS_ERROR", error);
+    return res.status(500).json({ error: "No se pudo guardar." });
+  }
+
+  res.json({
+    ok: true,
+    business
+  });
 });
 
-app.post("/api/business/:id/reservations", (req, res) => {
+app.post("/api/business/:id/reservations", async (req, res) => {
   const reservation = req.body.reservation;
 
   if (!reservation) {
     return res.status(400).json({ error: "Reserva inválida." });
   }
 
-  db.get(`SELECT * FROM businesses WHERE id = ?`, [req.params.id], (err, row) => {
-    if (err) return res.status(500).json({ error: "Error del servidor." });
-    if (!row) return res.status(404).json({ error: "Negocio no encontrado." });
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("id", req.params.id)
+    .maybeSingle();
 
-    const business = JSON.parse(row.data);
-    const newReservation = {
-      ...reservation,
-      id: reservation.id || uid(),
-      status: reservation.status || "Pendiente",
-      createdAt: reservation.createdAt || now()
-    };
+  if (error) {
+    console.error("BUSINESS_FIND_ERROR", error);
+    return res.status(500).json({ error: "Error del servidor." });
+  }
 
-    business.reservations = Array.isArray(business.reservations)
-      ? business.reservations
-      : [];
+  if (!data) {
+    return res.status(404).json({ error: "Negocio no encontrado." });
+  }
 
-    business.reservations.push(newReservation);
+  const business = data.data || {};
 
-    db.run(
-      `UPDATE businesses SET data = ?, updatedAt = ? WHERE id = ?`,
-      [JSON.stringify(business), now(), req.params.id],
-      function (updateErr) {
-        if (updateErr) return res.status(500).json({ error: "No se pudo guardar la reserva." });
+  const newReservation = {
+    ...reservation,
+    id: reservation.id || uid(),
+    status: reservation.status || "Pendiente",
+    createdAt: reservation.createdAt || now()
+  };
 
-        res.json({
-          ok: true,
-          reservation: newReservation,
-          business
-        });
-      }
-    );
+  business.reservations = Array.isArray(business.reservations)
+    ? business.reservations
+    : [];
+
+  business.reservations.push(newReservation);
+
+  const { error: updateError } = await supabase
+    .from("businesses")
+    .update({
+      data: business,
+      updatedAt: now()
+    })
+    .eq("id", req.params.id);
+
+  if (updateError) {
+    console.error("SAVE_RESERVATION_ERROR", updateError);
+    return res.status(500).json({ error: "No se pudo guardar la reserva." });
+  }
+
+  res.json({
+    ok: true,
+    reservation: newReservation,
+    business
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`ReservaPro backend activo en http://localhost:${PORT}`);
+  console.log(`ReservaPro backend activo en puerto ${PORT} usando Supabase`);
 });
