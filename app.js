@@ -919,7 +919,6 @@ tr.querySelector('[data-a="reschedule"]').onclick=()=>{
   });
 
   const choice=prompt(msg);
-
   if(!choice) return;
 
   const index=parseInt(choice)-1;
@@ -932,29 +931,31 @@ tr.querySelector('[data-a="reschedule"]').onclick=()=>{
 
   const oldSlot=(u.slots||[]).find(s=>s.id===r.slotId);
 
- r.slotId=selected.id;
+  r.slotId=selected.id;
 
-saveDB();
+  saveDB();
 
-try{
-  backendSaveCurrentBusiness();
-}catch(e){}
+  try{
+    backendSaveCurrentBusiness();
+  }catch(e){}
 
-renderReservations();
+  const rr=(u.reservations||[]).find(x=>x.id===r.id) || r;
 
-const rr=(u.reservations||[]).find(x=>x.id===r.id) || r;
+  RP_notifyReservationClient(
+    u,
+    rr,
+    "Reagendada",
+    oldSlot,
+    selected
+  );
 
-RP_notifyReservationClient(
-  u,
-  rr,
-  "Reagendada",
-  oldSlot,
-  selected
-);
+  renderReservations();
+  renderSlots();
+  renderCalendarVisual();
+  renderPremiumCalendar();
+  renderPublicIfOpen();
 
-renderReservations();
-
-alert("Cita reagendada correctamente.");
+  alert("Cita reagendada correctamente.");
 };
 const staffSelect = tr.querySelector(".reservationStaff");
 
