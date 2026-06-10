@@ -655,7 +655,7 @@ function formatReservaTime(timeStr){
   return h + ":" + m + " " + ampm;
 }
 
-function RP_notifyReservationClient(u, r, action, oldSlot, newSlot, forcePreOpenEmail){
+function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
 
   if(!u || !r) return;
 
@@ -728,13 +728,6 @@ Nueva hora: ${nuevaHora}
 Gracias por tu comprensión. ¡Te esperamos!`;
   }
 
-  let emailPopup = null;
-
-if(forcePreOpenEmail){
-  emailPopup = window.open("about:blank", "_blank");
-}
-
-
   const choice = prompt(
 `¿Cómo deseas avisar al cliente?
 
@@ -766,36 +759,48 @@ if(isMobile){
 }
   }
 
-if(choice === "2"){
+  if(choice === "2"){
 
-  const email = String(r.clientEmail || "").trim();
+    const email = String(r.clientEmail || "").trim();
 
-  if(!email){
-    alert("Este cliente no tiene correo.");
-    return;
-  }
+    if(!email){
+      alert("Este cliente no tiene correo.");
+      return;
+    }
 
-  let subject = "Estado de reserva";
+    let subject = "Estado de reserva";
 
-  if(action === "Confirmada") subject = "Reserva confirmada";
-  if(action === "Cancelada") subject = "Reserva cancelada";
-  if(action === "Completada") subject = "Reserva completada";
-  if(action === "Reagendada") subject = "Reserva reagendada";
+    if(action === "Confirmada") subject = "Reserva confirmada";
+    if(action === "Cancelada") subject = "Reserva cancelada";
+    if(action === "Completada") subject = "Reserva completada";
+    if(action === "Reagendada") subject = "Reserva reagendada";
 
-  const gmailWebUrl =
-    "https://mail.google.com/mail/?view=cm&fs=1&to=" +
-    encodeURIComponent(email) +
-    "&su=" +
-    encodeURIComponent(subject) +
-    "&body=" +
-    encodeURIComponent(message);
 
-  if(emailPopup){
-  emailPopup.location.href = gmailWebUrl;
+const isMobileEmail =
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const gmailWebUrl =
+  "https://mail.google.com/mail/?view=cm&fs=1&to=" +
+  encodeURIComponent(email) +
+  "&su=" +
+  encodeURIComponent(subject) +
+  "&body=" +
+  encodeURIComponent(message);
+
+const gmailAppUrl =
+  "googlegmail:///co?to=" +
+  encodeURIComponent(email) +
+  "&subject=" +
+  encodeURIComponent(subject) +
+  "&body=" +
+  encodeURIComponent(message);
+
+if(isMobileEmail){
+  window.location.href = gmailAppUrl;
 }else{
   window.open(gmailWebUrl, "_blank");
 }
-}
+  }
 
 }
 
@@ -915,6 +920,7 @@ tr.querySelector('[data-a="reschedule"]').onclick=()=>{
   });
 
   const choice=prompt(msg);
+
   if(!choice) return;
 
   const index=parseInt(choice)-1;
@@ -927,7 +933,18 @@ tr.querySelector('[data-a="reschedule"]').onclick=()=>{
 
   const oldSlot=(u.slots||[]).find(s=>s.id===r.slotId);
 
-  r.slotId=selected.id;
+r.slotId = selected.id;
+
+const rr =
+  (u.reservations || []).find(x => x.id === r.id) || r;
+
+RP_notifyReservationClient(
+  u,
+  rr,
+  "Reagendada",
+  oldSlot,
+  selected
+);
 
 saveDB();
 
@@ -935,22 +952,7 @@ try{
   backendSaveCurrentBusiness();
 }catch(e){}
 
-const rr=(u.reservations||[]).find(x=>x.id===r.id) || r;
-
-RP_notifyReservationClient(
-  u,
-  rr,
-  "Reagendada",
-  oldSlot,
-  selected,
-  true
-);
-
 renderReservations();
-renderSlots();
-renderCalendarVisual();
-renderPremiumCalendar();
-renderPublicIfOpen();
 
 alert("Cita reagendada correctamente.");
 };
