@@ -794,6 +794,11 @@ const gmailAppUrl =
   "&body=" +
   encodeURIComponent(message);
 
+if(action === "Reagendada"){
+  window.open(gmailWebUrl, "_blank");
+  return;
+}
+
 if(isMobileEmail){
   window.location.href = gmailAppUrl;
 }else{
