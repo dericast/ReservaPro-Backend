@@ -759,52 +759,32 @@ if(isMobile){
 }
   }
 
-  if(choice === "2"){
+if(choice === "2"){
 
-    const email = String(r.clientEmail || "").trim();
+  const email = String(r.clientEmail || "").trim();
 
-    if(!email){
-      alert("Este cliente no tiene correo.");
-      return;
-    }
-
-    let subject = "Estado de reserva";
-
-    if(action === "Confirmada") subject = "Reserva confirmada";
-    if(action === "Cancelada") subject = "Reserva cancelada";
-    if(action === "Completada") subject = "Reserva completada";
-    if(action === "Reagendada") subject = "Reserva reagendada";
-
-const isMobileEmail =
-  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-const gmailWebUrl =
-  "https://mail.google.com/mail/?view=cm&fs=1&to=" +
-  encodeURIComponent(email) +
-  "&su=" +
-  encodeURIComponent(subject) +
-  "&body=" +
-  encodeURIComponent(message);
-
-const gmailAppUrl =
-  "googlegmail:///co?to=" +
-  encodeURIComponent(email) +
-  "&subject=" +
-  encodeURIComponent(subject) +
-  "&body=" +
-  encodeURIComponent(message);
-
-if(action === "Reagendada"){
-  window.open(gmailWebUrl, "_blank");
-  return;
-}
-
-if(isMobileEmail){
-  window.location.href = gmailAppUrl;
-}else{
-  window.open(gmailWebUrl, "_blank");
-}
+  if(!email){
+    alert("Este cliente no tiene correo.");
+    return;
   }
+
+  let subject = "Estado de reserva";
+
+  if(action === "Confirmada") subject = "Reserva confirmada";
+  if(action === "Cancelada") subject = "Reserva cancelada";
+  if(action === "Completada") subject = "Reserva completada";
+  if(action === "Reagendada") subject = "Reserva reagendada";
+
+  const gmailWebUrl =
+    "https://mail.google.com/mail/?view=cm&fs=1&to=" +
+    encodeURIComponent(email) +
+    "&su=" +
+    encodeURIComponent(subject) +
+    "&body=" +
+    encodeURIComponent(message);
+
+  window.open(gmailWebUrl, "_blank");
+}
 
 }
 
@@ -938,29 +918,29 @@ tr.querySelector('[data-a="reschedule"]').onclick=()=>{
 
   r.slotId=selected.id;
 
-  saveDB();
+saveDB();
 
-  try{
-    backendSaveCurrentBusiness();
-  }catch(e){}
+try{
+  backendSaveCurrentBusiness();
+}catch(e){}
 
-  const rr=(u.reservations||[]).find(x=>x.id===r.id) || r;
+const rr=(u.reservations||[]).find(x=>x.id===r.id) || r;
 
-  RP_notifyReservationClient(
-    u,
-    rr,
-    "Reagendada",
-    oldSlot,
-    selected
-  );
+RP_notifyReservationClient(
+  u,
+  rr,
+  "Reagendada",
+  oldSlot,
+  selected
+);
 
-  renderReservations();
-  renderSlots();
-  renderCalendarVisual();
-  renderPremiumCalendar();
-  renderPublicIfOpen();
+renderReservations();
+renderSlots();
+renderCalendarVisual();
+renderPremiumCalendar();
+renderPublicIfOpen();
 
-  alert("Cita reagendada correctamente.");
+alert("Cita reagendada correctamente.");
 };
 const staffSelect = tr.querySelector(".reservationStaff");
 
