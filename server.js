@@ -68,16 +68,18 @@ app.post("/api/register", async (req, res) => {
     id,
     email: email.toLowerCase(),
     password,
-    businessName,
+    businessname: businessName,
     slug,
     data: initialData,
-    createdAt: date,
-    updatedAt: date
+    createdat: date,
+    updatedat: date
   });
 
   if (error) {
     console.error("REGISTER_ERROR", error);
-    return res.status(400).json({ error: "Ese correo ya existe o hubo un error." });
+    return res.status(400).json({
+      error: "Ese correo ya existe o hubo un error."
+    });
   }
 
   res.json({
@@ -184,10 +186,10 @@ app.put("/api/business/:id", async (req, res) => {
     id: business.id,
     email: String(business.email || "").toLowerCase(),
     password: business.pass || business.password || "",
-    businessName: business.businessName || "ReservaPro",
+    businessname: business.businessName || "ReservaPro",
     slug: business.slug || slugify(business.businessName),
     data: business,
-    updatedAt: date
+    updatedat: date
   };
 
   const { error } = await supabase
@@ -246,13 +248,15 @@ app.post("/api/business/:id/reservations", async (req, res) => {
     .from("businesses")
     .update({
       data: business,
-      updatedAt: now()
+      updatedat: now()
     })
     .eq("id", req.params.id);
 
   if (updateError) {
     console.error("SAVE_RESERVATION_ERROR", updateError);
-    return res.status(500).json({ error: "No se pudo guardar la reserva." });
+    return res.status(500).json({
+      error: "No se pudo guardar la reserva."
+    });
   }
 
   res.json({
