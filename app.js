@@ -774,23 +774,30 @@ if(isMobile){
     if(action === "Cancelada") subject = "Reserva cancelada";
     if(action === "Completada") subject = "Reserva completada";
     if(action === "Reagendada") subject = "Reserva reagendada";
-const isMobileEmail = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const isMobileEmail =
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const gmailWebUrl =
+  "https://mail.google.com/mail/?view=cm&fs=1&to=" +
+  encodeURIComponent(email) +
+  "&su=" +
+  encodeURIComponent(subject) +
+  "&body=" +
+  encodeURIComponent(message);
+
+const gmailAppUrl =
+  "googlegmail:///co?to=" +
+  encodeURIComponent(email) +
+  "&subject=" +
+  encodeURIComponent(subject) +
+  "&body=" +
+  encodeURIComponent(message);
 
 if(isMobileEmail){
-  window.location.href =
-    "mailto:" + encodeURIComponent(email) +
-    "?subject=" + encodeURIComponent(subject) +
-    "&body=" + encodeURIComponent(message);
+  window.location.href = gmailAppUrl;
 }else{
-  window.open(
-    "https://mail.google.com/mail/?view=cm&fs=1&to=" +
-    encodeURIComponent(email) +
-    "&su=" +
-    encodeURIComponent(subject) +
-    "&body=" +
-    encodeURIComponent(message),
-    "_blank"
-  );
+  window.open(gmailWebUrl, "_blank");
 }
   }
 
