@@ -795,11 +795,45 @@ const gmailAppUrl =
   "&body=" +
   encodeURIComponent(message);
 
-if(isMobileEmail){
-  window.location.href = gmailAppUrl;
-}else{
-  window.open(gmailWebUrl, "_blank");
+const isSafari =
+  /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+if(isSafari && action === "Reagendada"){
+  const box = document.createElement("div");
+  box.style.position = "fixed";
+  box.style.left = "16px";
+  box.style.right = "16px";
+  box.style.bottom = "20px";
+  box.style.zIndex = "99999";
+  box.style.background = "#111827";
+  box.style.color = "white";
+  box.style.padding = "16px";
+  box.style.borderRadius = "14px";
+  box.style.boxShadow = "0 10px 30px rgba(0,0,0,.35)";
+  box.innerHTML = `
+    <strong>Correo listo</strong><br>
+    Toca el botón para abrir Gmail.
+    <br><br>
+    <a href="${gmailWebUrl}" target="_blank"
+       style="display:block;text-align:center;background:#2563eb;color:white;padding:12px;border-radius:10px;text-decoration:none;font-weight:bold;">
+      Abrir Gmail
+    </a>
+    <button id="closeGmailNotice"
+      style="margin-top:10px;width:100%;padding:10px;border-radius:10px;border:0;">
+      Cerrar
+    </button>
+  `;
+
+  document.body.appendChild(box);
+
+  document.getElementById("closeGmailNotice").onclick = ()=>{
+    box.remove();
+  };
+
+  return;
 }
+
+window.open(gmailWebUrl, "_blank");
   }
 
 }
