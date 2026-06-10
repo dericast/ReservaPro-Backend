@@ -655,7 +655,7 @@ function formatReservaTime(timeStr){
   return h + ":" + m + " " + ampm;
 }
 
-function RP_notifyReservationClient(u, r, action, oldSlot, newSlot){
+function RP_notifyReservationClient(u, r, action, oldSlot, newSlot, forcePreOpenEmail){
 
   if(!u || !r) return;
 
@@ -728,6 +728,13 @@ Nueva hora: ${nuevaHora}
 Gracias por tu comprensión. ¡Te esperamos!`;
   }
 
+  let emailPopup = null;
+
+if(forcePreOpenEmail){
+  emailPopup = window.open("about:blank", "_blank");
+}
+
+
   const choice = prompt(
 `¿Cómo deseas avisar al cliente?
 
@@ -783,7 +790,11 @@ if(choice === "2"){
     "&body=" +
     encodeURIComponent(message);
 
+  if(emailPopup){
+  emailPopup.location.href = gmailWebUrl;
+}else{
   window.open(gmailWebUrl, "_blank");
+}
 }
 
 }
@@ -931,7 +942,8 @@ RP_notifyReservationClient(
   rr,
   "Reagendada",
   oldSlot,
-  selected
+  selected,
+  true
 );
 
 renderReservations();
