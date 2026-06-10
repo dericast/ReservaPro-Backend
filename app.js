@@ -775,15 +775,15 @@ if(isMobile){
     if(action === "Completada") subject = "Reserva completada";
     if(action === "Reagendada") subject = "Reserva reagendada";
 
-   const mailUrl =
-  "https://mail.google.com/mail/?view=cm&fs=1&to=" +
-  encodeURIComponent(email) +
-  "&su=" +
-  encodeURIComponent(subject) +
-  "&body=" +
-  encodeURIComponent(message);
-
-window.location.href = mailUrl;
+    window.open(
+      "https://mail.google.com/mail/?view=cm&fs=1&to=" +
+      encodeURIComponent(email) +
+      "&su=" +
+      encodeURIComponent(subject) +
+      "&body=" +
+      encodeURIComponent(message),
+      "_blank"
+    );
   }
 
 }
@@ -927,10 +927,19 @@ try{
 
 renderReservations();
 
-alert("Cita reagendada correctamente.");
-
 const rr=(u.reservations||[]).find(x=>x.id===r.id) || r;
-RP_notifyReservationClient(u,rr,"Reagendada",oldSlot,selected);
+
+RP_notifyReservationClient(
+  u,
+  rr,
+  "Reagendada",
+  oldSlot,
+  selected
+);
+
+renderReservations();
+
+alert("Cita reagendada correctamente.");
 };
 const staffSelect = tr.querySelector(".reservationStaff");
 
