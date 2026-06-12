@@ -7,6 +7,7 @@ let backendMode = true;
 const ACTIVATION_WHATSAPP = "18295260017";
 
 function showActivationLock(business){
+  window.RP_ACTIVATION_LOCKED = true;
   localStorage.setItem("pendingActivationBusiness", JSON.stringify(business || {}));
 
   db.currentUserId = null;
@@ -141,8 +142,22 @@ function publicUrlFor(u){ return window.location.href.split("#")[0] + "#/" + u.s
 function activeReservations(u){ return (u.reservations || []).filter(r => r.status === "Pendiente" || r.status === "Confirmada"); }
 function isSlotActiveReserved(u, slotId){ return activeReservations(u).some(r => r.slotId === slotId); }
 function show(id){
-  ["authView","dashboardView","publicView"].forEach(x=>document.getElementById(x).classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
+  if(window.RP_ACTIVATION_LOCKED && id !== "activationView"){
+    return;
+  }
+
+  ["authView","dashboardView","publicView"].forEach(x=>{
+    const el = document.getElementById(x);
+    if(el) el.classList.add("hidden");
+  });
+
+  const activation = document.getElementById("activationView");
+  if(activation && id !== "activationView"){
+    activation.style.display = "none";
+  }
+
+  const target = document.getElementById(id);
+  if(target) target.classList.remove("hidden");
 }
 function renderSession(){
   const u = currentUser();
@@ -302,6 +317,13 @@ document.getElementById("loginBtn").onclick=async ()=>{
   showActivationLock(result.business);
   return;
 }
+
+localStorage.removeItem("pendingActivationBusiness");
+window.RP_ACTIVATION_LOCKED = false;
+
+const activation = document.getElementById("activationView");
+if(activation) activation.style.display = "none";
+
     const u = upsertLocalBusinessFromBackend({
       ...result.business,
       pass
@@ -3703,6 +3725,31 @@ window.addEventListener("load", ()=>{
     document.body.classList.remove("app-loading");
   }, 700);
 });
+
+function RP_forceActivationScreen(){
+  const raw = localStorage.getItem("pendingActivationBusiness");
+  if(!raw) return;
+
+  const auth = document.getElementById("authView");
+  const dash = document.getElementById("dashboardView");
+  const pub = document.getElementById("publicView");
+  const activation = document.getElementById("activationView");
+
+  if(auth) auth.style.display = "none";
+  if(dash) dash.style.display = "none";
+  if(pub) pub.style.display = "none";
+
+  if(activation){
+    activation.style.display = "flex";
+    activation.style.alignItems = "center";
+    activation.style.justifyContent = "center";
+  }
+
+  window.RP_ACTIVATION_LOCKED = true;
+}
+
+setInterval(RP_forceActivationScreen, 300);
+window.addEventListener("load", RP_forceActivationScreen);
 
 
 
