@@ -191,15 +191,18 @@ app.put("/api/business/:id", async (req, res) => {
 
   const date = now();
 
-  const payload = {
-    id: business.id,
-    email: String(business.email || "").toLowerCase(),
-    password: business.pass || business.password || "",
-    businessname: business.businessName || "ReservaPro",
-    slug: business.slug || slugify(business.businessName),
-    data: business,
-    updatedat: date
-  };
+const payload = {
+  id: business.id,
+  email: String(business.email || "").toLowerCase(),
+  businessname: business.businessName || "ReservaPro",
+  slug: business.slug || slugify(business.businessName),
+  data: business,
+  updatedat: date
+};
+
+if (business.pass || business.password) {
+  payload.password = business.pass || business.password;
+}
 
   const { error } = await supabase
     .from("businesses")
