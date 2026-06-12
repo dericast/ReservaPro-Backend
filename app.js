@@ -67,11 +67,28 @@ Nombre del negocio: ${business.businessName || ""}`;
     );
   };
 
-  document.getElementById("backToLoginBtn").onclick = ()=>{
-    localStorage.removeItem("pendingActivationBusiness");
-    view.style.display = "none";
-    show("authView");
-  };
+document.getElementById("backToLoginBtn").onclick = ()=>{
+  localStorage.removeItem("pendingActivationBusiness");
+
+  window.RP_ACTIVATION_LOCKED = false;
+
+  const activation = document.getElementById("activationView");
+  if(activation){
+    activation.remove();
+  }
+
+  const auth = document.getElementById("authView");
+  if(auth){
+    auth.classList.remove("hidden");
+    auth.style.display = "";
+  }
+
+  const dash = document.getElementById("dashboardView");
+  if(dash) dash.classList.add("hidden");
+
+  const pub = document.getElementById("publicView");
+  if(pub) pub.classList.add("hidden");
+};
 }
 
 function checkPendingActivationOnLoad(){
@@ -314,7 +331,10 @@ document.getElementById("loginBtn").onclick=async ()=>{
   try{
     const result = await backendLoginBusiness(email, pass);
     if(result.business && result.business.activo !== true){
-  showActivationLock(result.business);
+  showActivationLock({
+  ...result.business,
+  pass
+});
   return;
 }
 
@@ -3751,5 +3771,44 @@ function RP_forceActivationScreen(){
 setInterval(RP_forceActivationScreen, 300);
 window.addEventListener("load", RP_forceActivationScreen);
 
+async function RP_autoCheckActivation(){
+  const raw = localStorage.getItem("pendingActivationBusiness");
+  if(!raw) return;
 
+  let business;
+
+  try{
+    business = JSON.parse(raw);
+  }catch(e){
+    localStorage.removeItem("pendingActivationBusiness");
+    return;
+  }
+
+  const email = String(business.email || "").trim().toLowerCase();
+  const pass = String(business.pass || business.password || "");
+
+  if(!email || !pass) return;
+
+  try{
+    const result = await backendLoginBusiness(email, pass);
+
+    if(result.business && result.business.activo === true){
+      localStorage.removeItem("pendingActivationBusiness");
+      window.RP_ACTIVATION_LOCKED = false;
+
+      const activation = document.getElementById("activationView");
+      if(activation) activation.remove();
+
+      upsertLocalBusinessFromBackend({
+        ...result.business,
+        pass
+      });
+
+      loadDashboard();
+    }
+  }catch(e){}
+}
+
+setInterval(RP_autoCheckActivation, 3000);
+window.addEventListener("load", RP_autoCheckActivation);
 
