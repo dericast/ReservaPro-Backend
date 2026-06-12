@@ -3857,14 +3857,19 @@ async function RP_watchActivationStatus(){
     const u = currentUser && currentUser();
     if(!u || !u.email || !u.pass) return;
 
-    const result = await backendLoginBusiness(u.email, u.pass);
+if(!u.slug) return;
 
-    if(result.business && result.business.activo !== true){
-      showActivationLock({
-        ...result.business,
-        pass: u.pass
-      });
-    }
+const result = await backendLoadBusinessBySlug(u.slug);
+
+if(result.business && result.business.activo !== true){
+  db.currentUserId = null;
+  saveDB();
+
+  showActivationLock({
+    ...result.business,
+    pass: u.pass || ""
+  });
+}
 
   }catch(e){}
 }
