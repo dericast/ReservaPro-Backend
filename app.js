@@ -3812,3 +3812,63 @@ async function RP_autoCheckActivation(){
 setInterval(RP_autoCheckActivation, 3000);
 window.addEventListener("load", RP_autoCheckActivation);
 
+async function RP_watchActivationStatus(){
+  try{
+    const pendingRaw = localStorage.getItem("pendingActivationBusiness");
+
+    if(pendingRaw){
+      const pending = JSON.parse(pendingRaw);
+      const email = String(pending.email || "").trim().toLowerCase();
+      const pass = String(pending.pass || pending.password || "");
+
+      if(email && pass){
+        const result = await backendLoginBusiness(email, pass);
+
+        if(result.business && result.business.activo === true){
+          localStorage.removeItem("pendingActivationBusiness");
+          window.RP_ACTIVATION_LOCKED = false;
+
+          const activation = document.getElementById("activationView");
+          if(activation) activation.remove();
+
+          upsertLocalBusinessFromBackend({
+            ...result.business,
+            pass
+          });
+
+          loadDashboard();
+
+          const dash = document.getElementById("dashboardView");
+          const auth = document.getElementById("authView");
+          const pub = document.getElementById("publicView");
+
+          if(auth) auth.classList.add("hidden");
+          if(pub) pub.classList.add("hidden");
+          if(dash){
+            dash.classList.remove("hidden");
+            dash.style.display = "";
+          }
+        }
+      }
+
+      return;
+    }
+
+    const u = currentUser && currentUser();
+    if(!u || !u.email || !u.pass) return;
+
+    const result = await backendLoginBusiness(u.email, u.pass);
+
+    if(result.business && result.business.activo !== true){
+      showActivationLock({
+        ...result.business,
+        pass: u.pass
+      });
+    }
+
+  }catch(e){}
+}
+
+setInterval(RP_watchActivationStatus, 3000);
+window.addEventListener("load", RP_watchActivationStatus);
+
