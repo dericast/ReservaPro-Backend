@@ -3874,35 +3874,21 @@ window.addEventListener("load", RP_watchActivationStatus);
 
 async function RP_kickUserIfDeactivated(){
   const u = currentUser && currentUser();
-
-  if(!u || !u.email || !u.pass) return;
+  if(!u || !u.slug) return;
 
   try{
-    const result = await backendLoginBusiness(u.email, u.pass);
+    const result = await backendLoadBusinessBySlug(u.slug);
 
     if(result.business && result.business.activo !== true){
       localStorage.setItem("pendingActivationBusiness", JSON.stringify({
         ...result.business,
-        pass: u.pass
+        pass: u.pass || ""
       }));
 
       db.currentUserId = null;
       saveDB();
 
-      window.RP_ACTIVATION_LOCKED = true;
-
-      const dash = document.getElementById("dashboardView");
-      const auth = document.getElementById("authView");
-      const pub = document.getElementById("publicView");
-
-      if(dash) dash.classList.add("hidden");
-      if(auth) auth.classList.add("hidden");
-      if(pub) pub.classList.add("hidden");
-
-      showActivationLock({
-        ...result.business,
-        pass: u.pass
-      });
+      location.reload();
     }
   }catch(e){}
 }

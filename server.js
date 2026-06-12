@@ -174,7 +174,11 @@ app.get("/api/business/:slug", async (req, res) => {
 
   res.json({
     ok: true,
-    business: data.data
+    business: {
+  ...data.data,
+  activo: data.activo === true,
+  estado: data.activo === true ? "activo" : "pendiente"
+}
   });
 });
 
