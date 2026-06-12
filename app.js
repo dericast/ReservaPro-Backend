@@ -3794,6 +3794,15 @@ async function RP_activationGuard(){
         });
 
         loadDashboard();
+
+        show("dashboardView");
+renderSession();
+
+const dash = document.getElementById("dashboardView");
+if(dash){
+  dash.classList.remove("hidden");
+  dash.style.display = "";
+}
       }
 
       return;
