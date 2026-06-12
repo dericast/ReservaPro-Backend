@@ -3771,112 +3771,37 @@ function RP_forceActivationScreen(){
 setInterval(RP_forceActivationScreen, 300);
 window.addEventListener("load", RP_forceActivationScreen);
 
-async function RP_autoCheckActivation(){
-  const raw = localStorage.getItem("pendingActivationBusiness");
-  if(!raw) return;
-
-  let business;
-
-  try{
-    business = JSON.parse(raw);
-  }catch(e){
-    localStorage.removeItem("pendingActivationBusiness");
-    return;
-  }
-
-  const email = String(business.email || "").trim().toLowerCase();
-  const pass = String(business.pass || business.password || "");
-
-  if(!email || !pass) return;
-
-  try{
-    const result = await backendLoginBusiness(email, pass);
-
-    if(result.business && result.business.activo === true){
-      localStorage.removeItem("pendingActivationBusiness");
-      window.RP_ACTIVATION_LOCKED = false;
-
-      const activation = document.getElementById("activationView");
-      if(activation) activation.remove();
-
-      upsertLocalBusinessFromBackend({
-        ...result.business,
-        pass
-      });
-
-      loadDashboard();
-    }
-  }catch(e){}
-}
-
-setInterval(RP_autoCheckActivation, 3000);
-window.addEventListener("load", RP_autoCheckActivation);
-
-async function RP_watchActivationStatus(){
+async function RP_activationGuard(){
   try{
     const pendingRaw = localStorage.getItem("pendingActivationBusiness");
 
     if(pendingRaw){
       const pending = JSON.parse(pendingRaw);
-      const email = String(pending.email || "").trim().toLowerCase();
-      const pass = String(pending.pass || pending.password || "");
+      if(!pending.slug) return;
 
-      if(email && pass){
-        const result = await backendLoginBusiness(email, pass);
+      const result = await backendLoadBusinessBySlug(pending.slug);
 
-        if(result.business && result.business.activo === true){
-          localStorage.removeItem("pendingActivationBusiness");
-          window.RP_ACTIVATION_LOCKED = false;
+      if(result.business && result.business.activo === true){
+        localStorage.removeItem("pendingActivationBusiness");
+        window.RP_ACTIVATION_LOCKED = false;
 
-          const activation = document.getElementById("activationView");
-          if(activation) activation.remove();
+        const activation = document.getElementById("activationView");
+        if(activation) activation.remove();
 
-          upsertLocalBusinessFromBackend({
-            ...result.business,
-            pass
-          });
+        upsertLocalBusinessFromBackend({
+          ...result.business,
+          pass: pending.pass || ""
+        });
 
-          loadDashboard();
-
-          const dash = document.getElementById("dashboardView");
-          const auth = document.getElementById("authView");
-          const pub = document.getElementById("publicView");
-
-          if(auth) auth.classList.add("hidden");
-          if(pub) pub.classList.add("hidden");
-          if(dash){
-            dash.classList.remove("hidden");
-            dash.style.display = "";
-          }
-        }
+        loadDashboard();
       }
 
       return;
     }
 
     const u = currentUser && currentUser();
-    if(!u || !u.email || !u.pass) return;
+    if(!u || !u.slug) return;
 
-    const result = await backendLoginBusiness(u.email, u.pass);
-
-    if(result.business && result.business.activo !== true){
-      showActivationLock({
-        ...result.business,
-        pass: u.pass
-      });
-    }
-
-  }catch(e){}
-}
-
-setInterval(RP_watchActivationStatus, 3000);
-window.addEventListener("load", RP_watchActivationStatus);
-
-async function RP_kickUserIfDeactivated(){
-  const u = currentUser && currentUser();
-  if(!u || !u.slug) return;
-
-  try{
     const result = await backendLoadBusinessBySlug(u.slug);
 
     if(result.business && result.business.activo !== true){
@@ -3890,8 +3815,9 @@ async function RP_kickUserIfDeactivated(){
 
       location.reload();
     }
+
   }catch(e){}
 }
 
-setInterval(RP_kickUserIfDeactivated, 3000);
-
+setInterval(RP_activationGuard, 3000);
+window.addEventListener("load", RP_activationGuard);
