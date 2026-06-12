@@ -7,6 +7,12 @@ let backendMode = true;
 const ACTIVATION_WHATSAPP = "18295260017";
 
 function showActivationLock(business){
+  db.currentUserId = null;
+  saveDB();
+
+  localStorage.removeItem("staffSession");
+  localStorage.removeItem("currentRole");
+
   ["authView","dashboardView","publicView"].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.classList.add("hidden");
@@ -31,6 +37,12 @@ function showActivationLock(business){
     <button class="btn primary" id="activateWhatsappBtn">
       Activar por WhatsApp
     </button>
+
+    <br><br>
+
+    <button class="btn" id="backToLoginBtn">
+      Volver al login
+    </button>
   `;
 
   document.getElementById("activateWhatsappBtn").onclick = ()=>{
@@ -41,12 +53,16 @@ Correo: ${business.email || ""}
 Nombre del negocio: ${business.businessName || ""}`;
 
     window.open(
-      "https://wa.me/" + ACTIVATION_WHATSAPP + "?text=" + encodeURIComponent(msg),
+      "https://wa.me/18295260017?text=" + encodeURIComponent(msg),
       "_blank"
     );
   };
-}
 
+  document.getElementById("backToLoginBtn").onclick = ()=>{
+    view.classList.add("hidden");
+    show("authView");
+  };
+}
 function loadDB(){
   try {
     const raw = localStorage.getItem(LS_KEY);
