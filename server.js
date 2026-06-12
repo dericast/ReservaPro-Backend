@@ -51,18 +51,18 @@ app.post("/api/register", async (req, res) => {
   const date = now();
 
   const initialData = {
-    id,
-    email: email.toLowerCase(),
-    pass: password,
-    password,
-    businessName,
-    slug,
-    services: [],
-    slots: [],
-    reservations: [],
-    gallery: [],
-    staff: []
-  };
+  id,
+  email: email.toLowerCase(),
+  businessName,
+  slug,
+  activo: false,
+  estado: "pendiente",
+  services: [],
+  slots: [],
+  reservations: [],
+  gallery: [],
+  staff: []
+};
 
   const { error } = await supabase.from("businesses").insert({
     id,
@@ -71,6 +71,7 @@ app.post("/api/register", async (req, res) => {
     businessname: businessName,
     slug,
     data: initialData,
+    activo: false,
     createdat: date,
     updatedat: date
   });
@@ -109,7 +110,11 @@ app.post("/api/login", async (req, res) => {
 
   res.json({
     ok: true,
-    business: data.data
+    business: {
+  ...data.data,
+  activo: data.activo === true,
+  estado: data.activo === true ? "activo" : "pendiente"
+}
   });
 });
 

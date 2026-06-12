@@ -4,6 +4,49 @@ let publicBusinessId = null;
 const API_URL = "https://reservapro-backend.onrender.com";
 let backendMode = true;
 
+const ACTIVATION_WHATSAPP = "18295260017";
+
+function showActivationLock(business){
+  ["authView","dashboardView","publicView"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.add("hidden");
+  });
+
+  let view = document.getElementById("activationView");
+
+  if(!view){
+    view = document.createElement("div");
+    view.id = "activationView";
+    view.className = "card";
+    document.body.appendChild(view);
+  }
+
+  view.classList.remove("hidden");
+
+  view.innerHTML = `
+    <h2>Cuenta pendiente de activación</h2>
+    <p>Tu cuenta fue creada correctamente.</p>
+    <p>Para comenzar a utilizar ReservaPro, debes activar tu acceso.</p>
+
+    <button class="btn primary" id="activateWhatsappBtn">
+      Activar por WhatsApp
+    </button>
+  `;
+
+  document.getElementById("activateWhatsappBtn").onclick = ()=>{
+    const msg =
+`Hola, quiero activar mi cuenta de ReservaPro.
+
+Correo: ${business.email || ""}
+Nombre del negocio: ${business.businessName || ""}`;
+
+    window.open(
+      "https://wa.me/" + ACTIVATION_WHATSAPP + "?text=" + encodeURIComponent(msg),
+      "_blank"
+    );
+  };
+}
+
 function loadDB(){
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -203,8 +246,7 @@ document.getElementById("registerBtn").onclick=async ()=>{
       pass
     });
 
-    alert("Cuenta creada en backend.");
-    loadDashboard();
+    showActivationLock(u);
     return;
   }catch(err){
     alert("No se pudo crear en backend: " + err.message);
@@ -217,6 +259,10 @@ document.getElementById("loginBtn").onclick=async ()=>{
 
   try{
     const result = await backendLoginBusiness(email, pass);
+    if(result.business && result.business.activo !== true){
+  showActivationLock(result.business);
+  return;
+}
     const u = upsertLocalBusinessFromBackend({
       ...result.business,
       pass
