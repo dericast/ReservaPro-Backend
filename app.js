@@ -7,6 +7,8 @@ let backendMode = true;
 const ACTIVATION_WHATSAPP = "18295260017";
 
 function showActivationLock(business){
+  localStorage.setItem("pendingActivationBusiness", JSON.stringify(business || {}));
+
   db.currentUserId = null;
   saveDB();
 
@@ -23,26 +25,32 @@ function showActivationLock(business){
   if(!view){
     view = document.createElement("div");
     view.id = "activationView";
-    view.className = "card";
     document.body.appendChild(view);
   }
 
-  view.classList.remove("hidden");
+  view.className = "";
+  view.style.minHeight = "calc(100vh - 120px)";
+  view.style.display = "flex";
+  view.style.alignItems = "center";
+  view.style.justifyContent = "center";
+  view.style.padding = "20px";
 
   view.innerHTML = `
-    <h2>Cuenta pendiente de activación</h2>
-    <p>Tu cuenta fue creada correctamente.</p>
-    <p>Para comenzar a utilizar ReservaPro, debes activar tu acceso.</p>
+    <div style="max-width:420px;width:100%;background:white;border-radius:18px;padding:24px;box-shadow:0 12px 35px rgba(0,0,0,.15);text-align:center;">
+      <h2>Cuenta pendiente de activación</h2>
+      <p>Tu cuenta fue creada correctamente.</p>
+      <p>Para comenzar a utilizar ReservaPro, debes activar tu acceso.</p>
 
-    <button class="btn primary" id="activateWhatsappBtn">
-      Activar por WhatsApp
-    </button>
+      <button class="btn primary" id="activateWhatsappBtn">
+        Activar por WhatsApp
+      </button>
 
-    <br><br>
+      <br><br>
 
-    <button class="btn" id="backToLoginBtn">
-      Volver al login
-    </button>
+      <button class="btn" id="backToLoginBtn">
+        Volver al login
+      </button>
+    </div>
   `;
 
   document.getElementById("activateWhatsappBtn").onclick = ()=>{
@@ -59,10 +67,25 @@ Nombre del negocio: ${business.businessName || ""}`;
   };
 
   document.getElementById("backToLoginBtn").onclick = ()=>{
-    view.classList.add("hidden");
+    localStorage.removeItem("pendingActivationBusiness");
+    view.style.display = "none";
     show("authView");
   };
 }
+
+function checkPendingActivationOnLoad(){
+  const raw = localStorage.getItem("pendingActivationBusiness");
+  if(!raw) return;
+
+  try{
+    const business = JSON.parse(raw);
+    showActivationLock(business);
+  }catch(e){
+    localStorage.removeItem("pendingActivationBusiness");
+  }
+}
+
+
 function loadDB(){
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -1401,6 +1424,11 @@ function setupBackendSyncButton(){
 (function init(){
 
   renderSession();
+
+  checkPendingActivationOnLoad();
+if(document.getElementById("activationView")){
+  return;
+}
 
   const slug = location.hash.replace("#/","").trim();
 
