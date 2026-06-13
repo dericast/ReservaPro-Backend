@@ -2022,7 +2022,7 @@ function renderSimpleStats(){
 
 setInterval(()=>{
   try{ renderSimpleStats(); }catch(e){}
-}, 3000);
+}, 10000);
 
 function renderFrequentClients(){
   const u = currentUser && currentUser();
@@ -2095,7 +2095,7 @@ function renderFrequentClients(){
 
 setInterval(()=>{
   try{ renderFrequentClients(); }catch(e){}
-}, 3000);
+}, 10000);
 
 function setupReservationSearch(){
   const input = document.getElementById("reservationSearchInput");
@@ -2117,7 +2117,7 @@ function setupReservationSearch(){
 
 setInterval(()=>{
   try{ setupReservationSearch(); }catch(e){}
-}, 1000);
+}, 8000);
 
 let lastReservationCount = null;
 
@@ -2147,7 +2147,7 @@ setInterval(()=>{
   try{
     checkNewReservationsSound();
   }catch(e){}
-}, 3000);
+}, 10000);
 
 function saveClientNote(phone, note){
   const u = currentUser && currentUser();
@@ -2190,7 +2190,7 @@ function renderTodayAppointments(){
 
 setInterval(()=>{
   try{ renderTodayAppointments(); }catch(e){}
-},3000);
+},10000);
 
 function blockClient(phone){
   const u = currentUser && currentUser();
@@ -2289,7 +2289,7 @@ Te esperamos. ¡Gracias por confiar en nosotros!`;
 
 setInterval(()=>{
   try{ renderAppointmentReminders(); }catch(e){}
-},3000);
+},10000);
 
 let premiumCalendarDate = new Date();
 let selectedPremiumCalendarDate = "";
@@ -2511,7 +2511,7 @@ function renderClientProfile(){
 
 setInterval(()=>{
   try{ renderClientProfile(); }catch(e){}
-},3000);
+},10000);
 
 function renderStaff(){
   const u = currentUser && currentUser();
@@ -2635,7 +2635,7 @@ setInterval(()=>{
     setupStaff();
     renderStaff();
   }catch(e){}
-},1000);
+},8000);
 
 function setupStaffFilter(){
   const u = currentUser && currentUser();
@@ -2671,7 +2671,7 @@ function setupStaffFilter(){
 
 setInterval(()=>{
   try{ setupStaffFilter(); }catch(e){}
-},1000);
+},8000);
 
 function setupStaffFilter(){
   const select = document.getElementById("staffFilter");
@@ -2713,7 +2713,7 @@ setInterval(()=>{
   try{
     setupStaffFilter();
   }catch(e){}
-},1000);
+},8000);
 
 function renderStaffStats(){
   const box = document.getElementById("staffStatsTable");
@@ -2753,7 +2753,7 @@ setInterval(()=>{
   try{
     renderStaffStats();
   }catch(e){}
-},1000);
+},8000);
 
 function applyRolePermissions(){
   const select = document.getElementById("currentRoleSelect");
@@ -2930,7 +2930,7 @@ setInterval(()=>{
     setupStaffLogin();
     applyStaffRealView();
   }catch(e){}
-},1000);
+},8000);
 
 function logoutStaffSession(){
   localStorage.removeItem("staffSession");
@@ -3221,7 +3221,7 @@ setInterval(()=>{
   try{
     renderClientStaffOptions();
   }catch(e){}
-},1000);
+},8000);
 
 
 
@@ -3525,7 +3525,7 @@ if(galleryFilesInput){
   window.RP_forceCorrectVisibleView = forceCorrectVisibleView;
   window.addEventListener("load", ()=>setTimeout(forceCorrectVisibleView, 1200));
   window.addEventListener("hashchange", ()=>setTimeout(forceCorrectVisibleView, 300));
-  setInterval(forceCorrectVisibleView, 3000);
+  setInterval(forceCorrectVisibleView, 10000);
 
   function cleanPublicForm(){
     ["clientName","clientPhone","clientEmail"].forEach(id=>{
@@ -3736,7 +3736,7 @@ if(galleryFilesInput){
     if(publicView && !publicView.classList.contains("hidden") && typeof RP_refreshPublicReservationStatus === "function"){
       RP_refreshPublicReservationStatus();
     }
-  },3000);
+  },10000);
 })();
 
 // Evita que se vea login/dashboard equivocado mientras carga
@@ -3768,7 +3768,7 @@ function RP_forceActivationScreen(){
   window.RP_ACTIVATION_LOCKED = true;
 }
 
-setInterval(RP_forceActivationScreen, 300);
+setInterval(RP_forceActivationScreen, 3000);
 window.addEventListener("load", RP_forceActivationScreen);
 
 async function RP_activationGuard(){
@@ -3828,5 +3828,6 @@ if(dash){
   }catch(e){}
 }
 
-setInterval(RP_activationGuard, 3000);
+setInterval(RP_activationGuard, 10000);
 window.addEventListener("load", RP_activationGuard);
+
