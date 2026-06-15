@@ -278,13 +278,33 @@ async function backendSaveCurrentBusiness(){
 }
 
 async function saveDBAndBackend(){
+  window.RP_SAVING_NOW = true;
+
   saveDB();
-  await backendSaveCurrentBusiness();
+
+  try{
+    await backendSaveCurrentBusiness();
+  }finally{
+    setTimeout(()=>{
+      window.RP_SAVING_NOW = false;
+    }, 3000);
+  }
 }
 
 function saveDBAndBackendSoon(){
+  window.RP_SAVING_NOW = true;
+
   saveDB();
-  setTimeout(()=>backendSaveCurrentBusiness(), 50);
+
+  setTimeout(async ()=>{
+    try{
+      await backendSaveCurrentBusiness();
+    }finally{
+      setTimeout(()=>{
+        window.RP_SAVING_NOW = false;
+      }, 3000);
+    }
+  }, 300);
 }
 
 document.getElementById("showLogin").onclick=()=>{
@@ -1763,6 +1783,7 @@ function RP_currentPublicSlug(){
 }
 
 async function RP_refreshOwnerDashboardFromBackend(){
+    if(window.RP_SAVING_NOW) return;
   const u = currentUser && currentUser();
   if(!u || !u.slug || typeof backendLoadBusinessBySlug !== "function") return;
 
