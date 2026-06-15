@@ -2557,7 +2557,7 @@ function renderStaff(){
       <td>${s.email || "-"}</td>
       <td>${s.role}</td>
       <td>
-        <button class="btn small danger" onclick="deleteStaff(${index})">Eliminar</button>
+        <button class="btn small danger" onclick="deleteStaffByEmail('${s.email || ""}')">Eliminar</button>
       </td>
     `;
 
@@ -2652,6 +2652,37 @@ function deleteStaff(index){
       window.RP_SAVING_NOW = false;
     }, 3000);
   });
+}
+
+async function deleteStaffByEmail(email){
+  const u = currentUser();
+  if(!u || !u.staff) return;
+
+  if(!confirm("¿Eliminar este trabajador?")) return;
+
+  window.RP_SAVING_NOW = true;
+
+  const targetEmail = String(email || "").trim().toLowerCase();
+
+  u.staff = u.staff.filter(s =>
+    String(s.email || "").trim().toLowerCase() !== targetEmail
+  );
+
+  saveDB();
+  renderStaff();
+
+  try{
+    await backendSaveCurrentBusiness();
+  }catch(e){
+    console.error("DELETE_STAFF_ERROR", e);
+  }
+
+  saveDB();
+  renderStaff();
+
+  setTimeout(()=>{
+    window.RP_SAVING_NOW = false;
+  }, 6000);
 }
 
 setInterval(()=>{
