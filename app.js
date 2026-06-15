@@ -299,11 +299,13 @@ function saveDBAndBackendSoon(){
   setTimeout(async ()=>{
     try{
       await backendSaveCurrentBusiness();
-    }finally{
-      setTimeout(()=>{
-        window.RP_SAVING_NOW = false;
-      }, 3000);
+    }catch(e){
+      console.error(e);
     }
+
+    setTimeout(()=>{
+      window.RP_SAVING_NOW = false;
+    }, 8000);
   }, 300);
 }
 
