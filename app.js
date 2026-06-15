@@ -2635,20 +2635,23 @@ function setupStaff(){
 }
 
 function deleteStaff(index){
-  const u = currentUser && currentUser();
+  const u = currentUser();
   if(!u || !u.staff) return;
 
   if(!confirm("¿Eliminar este trabajador?")) return;
 
-  u.staff.splice(index,1);
+  window.RP_SAVING_NOW = true;
+
+  u.staff.splice(index, 1);
 
   saveDB();
-
-  try{
-    backendSaveCurrentBusiness();
-  }catch(e){}
-
   renderStaff();
+
+  backendSaveCurrentBusiness().finally(()=>{
+    setTimeout(()=>{
+      window.RP_SAVING_NOW = false;
+    }, 3000);
+  });
 }
 
 setInterval(()=>{
