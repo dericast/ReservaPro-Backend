@@ -3800,7 +3800,7 @@ if(galleryFilesInput){
 window.addEventListener("load", ()=>{
   setTimeout(()=>{
     document.body.classList.remove("app-loading");
-  }, 700);
+  }, 1200);
 });
 
 function RP_forceActivationScreen(){
