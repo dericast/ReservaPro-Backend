@@ -1817,6 +1817,33 @@ async function RP_refreshOwnerDashboardFromBackend(){
   }
 }
 
+async function RP_refreshOnlyReservationsFromBackend(){
+  if(window.RP_SAVING_NOW) return;
+
+  const u = currentUser && currentUser();
+  if(!u || !u.slug || typeof backendLoadBusinessBySlug !== "function") return;
+
+  try{
+    const result = await backendLoadBusinessBySlug(u.slug);
+    if(!result || !result.business) return;
+
+    const fresh = normalizeUser(result.business);
+
+    u.reservations = fresh.reservations || [];
+
+    saveDB();
+
+    try{ renderReservations(); }catch(e){}
+    try{ renderCalendarVisual(); }catch(e){}
+    try{ renderPremiumCalendar(); }catch(e){}
+    try{ renderTodayAppointments(); }catch(e){}
+    try{ checkNewReservationsSound(); }catch(e){}
+  }catch(e){
+    console.warn("No se pudieron refrescar solo las reservas", e);
+  }
+}
+
+
 async function RP_refreshPublicReservationStatus(){
   const slug = RP_currentPublicSlug();
   if(!slug || typeof backendLoadBusinessBySlug !== "function") return;
@@ -1884,7 +1911,7 @@ function RP_startBackendAutoSync(){
     const publicView = document.getElementById("publicView");
 
     if(dashboard && !dashboard.classList.contains("hidden")){
-      RP_refreshOwnerDashboardFromBackend();
+      RP_refreshOnlyReservationsFromBackend();
     }
 
     if(publicView && !publicView.classList.contains("hidden")){
@@ -1898,17 +1925,28 @@ if(publicView && !publicView.classList.contains("hidden") && slug){
     }
   }, 1000);
 
+// setInterval(()=>{
+//   const dashboard = document.getElementById("dashboardView");
+//   const publicView = document.getElementById("publicView");
+//
+//   if(dashboard && !dashboard.classList.contains("hidden")){
+//     RP_refreshOwnerDashboardFromBackend();
+//   }
+//
+//   if(publicView && !publicView.classList.contains("hidden")){
+//     RP_refreshPublicReservationStatus();
+//   }
+// }, 15000);
+}
+
 setInterval(()=>{
   const dashboard = document.getElementById("dashboardView");
 
   if(dashboard && !dashboard.classList.contains("hidden")){
-    try{
-      RP_refreshOwnerDashboardFromBackend();
-      renderReservations();
-    }catch(e){}
+    RP_refreshOnlyReservationsFromBackend();
   }
-}, 15000);
-}
+}, 10000);
+
 
 window.addEventListener("load", RP_startBackendAutoSync);
 window.addEventListener("hashchange", ()=>{
