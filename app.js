@@ -1898,18 +1898,16 @@ if(publicView && !publicView.classList.contains("hidden") && slug){
     }
   }, 1000);
 
-// setInterval(()=>{
-//   const dashboard = document.getElementById("dashboardView");
-//   const publicView = document.getElementById("publicView");
-//
-//   if(dashboard && !dashboard.classList.contains("hidden")){
-//     RP_refreshOwnerDashboardFromBackend();
-//   }
-//
-//   if(publicView && !publicView.classList.contains("hidden")){
-//     RP_refreshPublicReservationStatus();
-//   }
-// }, 15000);
+setInterval(()=>{
+  const dashboard = document.getElementById("dashboardView");
+
+  if(dashboard && !dashboard.classList.contains("hidden")){
+    try{
+      RP_refreshOwnerDashboardFromBackend();
+      renderReservations();
+    }catch(e){}
+  }
+}, 15000);
 }
 
 window.addEventListener("load", RP_startBackendAutoSync);
