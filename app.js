@@ -305,7 +305,7 @@ function saveDBAndBackendSoon(){
 
     setTimeout(()=>{
       window.RP_SAVING_NOW = false;
-    }, 8000);
+    }, 1000);
   }, 300);
 }
 
